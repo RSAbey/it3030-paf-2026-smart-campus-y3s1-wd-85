@@ -1,8 +1,27 @@
 import AdminLayout from "../../components/layout/AdminLayout";
 import StatCard from "../../components/dashboard/StatCard";
 import { Calendar, Ticket, Box, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import API from "../../services/api";
+import api from "../../services/api";
 
 function DashboardPage() {
+  const [bookings, setBookings] = useState([]);
+  const [tickets, setTickets] = useState([]);
+  const [resources, setResources] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState({
+    totalBookings: 0,
+    activeTickets: 0,
+    totalResources: 0,
+    activeUsers: 0
+  });
+  useEffect(() => {
+    api.get("/dashboard/stats")
+        .then((res) => setStats(res.data))
+        .catch((err) => console.log(err));
+    }, []);
+
   return (
     <AdminLayout>
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
@@ -11,28 +30,28 @@ function DashboardPage() {
       <div className="grid grid-cols-4 gap-6 mb-6">
             <StatCard
                 title="Total Bookings"
-                value="156"
+                value={stats.totalBookings}
                 icon={<Calendar className="text-white" />}
                 color="bg-blue-500"
             />
 
             <StatCard
                 title="Active Tickets"
-                value="23"
+                value={stats.activeTickets}
                 icon={<Ticket className="text-white" />}
                 color="bg-red-500"
             />
 
             <StatCard
                 title="Total Resources"
-                value="89"
+                value={stats.totalResources}
                 icon={<Box className="text-white" />}
                 color="bg-green-500"
             />
 
             <StatCard
                 title="Active Users"
-                value="342"
+                value={stats.activeUsers}
                 icon={<Users className="text-white" />}
                 color="bg-purple-500"
             />
