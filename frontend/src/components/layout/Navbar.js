@@ -6,8 +6,8 @@ function Navbar() {
       
       {/* Title */}
       <div>
-        <h1 className="text-lg font-semibold">Smart Campus</h1>
-        <p className="text-xs text-gray-500">Operations Hub</p>
+        {/* <h1 className="text-lg font-semibold">Smart Campus</h1> */}
+        {/* <p className="text-xs text-gray-500">Operations Hub</p> */}
       </div>
 
       {/* Right side */}
