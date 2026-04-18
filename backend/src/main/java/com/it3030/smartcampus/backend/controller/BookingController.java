@@ -9,26 +9,29 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.it3030.smartcampus.backend.entity.Resource;
-import com.it3030.smartcampus.backend.service.ResourceService;
+import com.it3030.smartcampus.backend.entity.Booking;
+import com.it3030.smartcampus.backend.service.BookingService;
+
 
 @RestController
-@RequestMapping("/api/resources")
+@RequestMapping("/api/booking")
 @CrossOrigin
-public class ResourceController {
-    private final ResourceService service;
 
-    public ResourceController(ResourceService service) {
+public class BookingController {
+    private final BookingService service;
+
+    public BookingController(BookingService service) {
         this.service = service;
     }
 
     @GetMapping
-    public List<Resource> getAllResources() {
-        return service.getAllResources();
+    public List<Booking> getAllBookings() {
+        return service.getAllBookings();
     }
 
     @PostMapping
-    public Resource createResource(@RequestBody Resource resource) {
-        return service.createResource(resource);
+    public Booking createBooking(@RequestBody Booking booking) {
+        return service.createBooking(booking);
     }
+
 }

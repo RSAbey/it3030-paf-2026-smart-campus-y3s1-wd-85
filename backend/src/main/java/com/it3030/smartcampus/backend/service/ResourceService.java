@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.it3030.smartcampus.backend.model.Resource;
+import com.it3030.smartcampus.backend.entity.Resource;
 import com.it3030.smartcampus.backend.repository.ResourceRepository;
 
 @Service

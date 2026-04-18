@@ -1,4 +1,4 @@
-package com.it3030.smartcampus.backend.model;
+package com.it3030.smartcampus.backend.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,15 +12,18 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Resource {
-
+public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; // 🔥 THIS IS THE FIX
 
-    private String name;
-    private String type;
-    private int capacity;
-    private String location;
-    private String status; // ACTIVE / OUT_OF_SERVICE
+    private Long userId;
+    private Long resourceId;
+
+    private String date;
+    private String startTime;
+    private String endTime;
+
+    private String status; // PENDING, APPROVED, REJECTED
+
 }
