@@ -1,10 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Box, Calendar, Ticket, Bell, Settings } from "lucide-react";
+import {
+  LayoutDashboard,
+  Box,
+  Calendar,
+  Ticket,
+  Bell,
+  Settings
+} from "lucide-react";
 
-function Sidebar() {
+function Sidebar({ role = "admin" }) {
   const location = useLocation();
 
-  const menu = [
+  // 🟦 Admin Menu
+  const adminMenu = [
     { name: "Dashboard", path: "/admin/dashboard", icon: <LayoutDashboard size={18} /> },
     { name: "Resources", path: "/admin/resources", icon: <Box size={18} /> },
     { name: "Bookings", path: "/admin/bookings", icon: <Calendar size={18} /> },
@@ -12,6 +20,19 @@ function Sidebar() {
     { name: "Notifications", path: "/admin/notifications", icon: <Bell size={18} /> },
     { name: "Settings", path: "/admin/settings", icon: <Settings size={18} /> },
   ];
+
+  // 🟩 Student Menu
+  const studentMenu = [
+    { name: "Dashboard", path: "/student/dashboard", icon: <LayoutDashboard size={18} /> },
+    { name: "Resources", path: "/student/resources", icon: <Box size={18} /> },
+    { name: "My Bookings", path: "/student/bookings", icon: <Calendar size={18} /> },
+    { name: "Tickets", path: "/student/tickets", icon: <Ticket size={18} /> },
+    { name: "Notifications", path: "/student/notifications", icon: <Bell size={18} /> },
+    { name: "Settings", path: "/student/settings", icon: <Settings size={18} /> },
+  ];
+
+  // 🎯 Select menu based on role
+  const menu = role === "student" ? studentMenu : adminMenu;
 
   return (
     <div className="w-64 h-screen bg-white border-r flex flex-col justify-between">
@@ -49,7 +70,7 @@ function Sidebar() {
         </ul>
       </div>
 
-      {/* Bottom Logout */}
+      {/* Bottom */}
       <div className="p-4 text-red-500 text-sm cursor-pointer">
         Logout
       </div>
