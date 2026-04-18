@@ -1,5 +1,8 @@
 package com.it3030.smartcampus.backend.service;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.stereotype.Service;
 
 import com.it3030.smartcampus.backend.dto.DashboardStats;
@@ -41,6 +44,14 @@ public class DashboardService {
                 totalResources,
                 activeUsers
         );
+    }
+
+    public List<Map<String, Object>> getWeeklyBookings() {
+        return bookingRepo.getWeeklyBookings(); // custom query
+    }
+
+    public List<Map<String, Object>> getResourceDistribution() {
+        return resourceRepo.getResourceDistribution();
     }
 
 }

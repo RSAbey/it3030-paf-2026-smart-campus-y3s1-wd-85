@@ -1,5 +1,8 @@
 package com.it3030.smartcampus.backend.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,5 +26,15 @@ public class DashboardController {
     @GetMapping("/stats")
     public DashboardStats getStats() {
         return service.getStats();
+    }
+
+    @GetMapping("/weekly-bookings")
+        public List<Map<String, Object>> weeklyBookings() {
+            return service.getWeeklyBookings();
+    }
+
+    @GetMapping("/resource-distribution")
+        public List<Map<String, Object>> resourceDistribution() {
+            return service.getResourceDistribution();
     }
 }

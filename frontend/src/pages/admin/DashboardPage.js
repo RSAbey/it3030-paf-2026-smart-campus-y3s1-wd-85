@@ -4,6 +4,10 @@ import { Calendar, Ticket, Box, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import API from "../../services/api";
 import api from "../../services/api";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from "recharts";
 
 function DashboardPage() {
   const [bookings, setBookings] = useState([]);
@@ -16,9 +20,19 @@ function DashboardPage() {
     totalResources: 0,
     activeUsers: 0
   });
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [resourceData, setResourceData] = useState([]);
+  const COLORS = ["#2563EB", "#22C55E", "#F59E0B", "#EF4444"];
+
   useEffect(() => {
     api.get("/dashboard/stats")
         .then((res) => setStats(res.data))
+        .catch((err) => console.log(err));
+     api.get("/dashboard/weekly-bookings")
+        .then((res) => setWeeklyData(res.data))
+        .catch((err) => console.log(err));
+     api.get("/dashboard/resource-distribution")
+        .then((res) => setResourceData(res.data))
         .catch((err) => console.log(err));
     }, []);
 
@@ -62,14 +76,36 @@ function DashboardPage() {
             <div className="bg-white p-5 rounded-xl shadow">
                 <h3 className="font-semibold mb-4">Weekly Bookings</h3>
                 <div className="h-48 bg-gray-100 rounded flex items-center justify-center">
-                Chart Here
+                    <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={weeklyData}>
+                            <XAxis dataKey="day" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="total" fill="#2563EB" />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
 
             <div className="bg-white p-5 rounded-xl shadow">
                 <h3 className="font-semibold mb-4">Resource Distribution</h3>
                 <div className="h-48 bg-gray-100 rounded flex items-center justify-center">
-                Chart Here
+                    <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                            <Pie
+                            data={resourceData}
+                            dataKey="value"
+                            nameKey="name"
+                            outerRadius={70}
+                            label
+                            >
+                            {resourceData.map((entry, index) => (
+                                <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                            </Pie>
+                            <Tooltip />
+                        </PieChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
         </div>
