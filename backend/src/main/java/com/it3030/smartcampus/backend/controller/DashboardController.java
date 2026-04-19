@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,7 +18,15 @@ import com.it3030.smartcampus.backend.service.DashboardService;
 
 public class DashboardController {
 
+    @Auutowired
+
     private final DashboardService service;
+
+    //Student Dashboard API
+    @GetMapping("/student/{userId}")
+    public Map<String, Object> getStudentStats(@PathVariable Long userId) {
+        return service.getStudentStats(userId);
+    }
 
     public DashboardController(DashboardService service) {
         this.service = service;

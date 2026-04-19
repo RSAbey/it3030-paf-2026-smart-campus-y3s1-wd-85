@@ -1,8 +1,24 @@
+import { useEffect, useState } from "react";
+import { getStudentDashboard } from "../../services/dashboardService";
 import StudentLayout from "../../components/layout/StudentLayout";
 import StatCard from "../../components/dashboard/StatCard";
 import { Calendar, Ticket, Clock } from "lucide-react";
 
 function DashboardPage() {
+  const [data, setData] = useState(null);
+  const userId = 1; // Replace with actual user ID from auth context
+
+  useEffect(() => {
+    getStudentDashboard(userId)
+      .then((res) => {
+        setData(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
   return (
     <StudentLayout>
 
