@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getStudentDashboard } from "../../services/dashboardService";
 import StudentLayout from "../../components/layout/StudentLayout";
 import StatCard from "../../components/dashboard/StatCard";
 import { Calendar, Ticket, Clock } from "lucide-react";
+import BookingModal from "../../components/bookings/BookingModal";
 
 function DashboardPage() {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const userId = 1; // Replace with actual user ID from auth context
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     getStudentDashboard(userId)
@@ -56,9 +60,12 @@ function DashboardPage() {
 
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <button className="bg-blue-600 text-white py-3 rounded-lg font-medium">
+        <button
+          onClick={() => setOpen(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
           + Book Resource
         </button>
+        {open && <BookingModal close={() => setOpen(false)} />}
 
         <button className="border border-blue-600 text-blue-600 py-3 rounded-lg font-medium">
           + Create Ticket

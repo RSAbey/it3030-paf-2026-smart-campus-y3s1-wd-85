@@ -1,6 +1,8 @@
 package com.it3030.smartcampus.backend.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -45,6 +47,17 @@ public class BookingController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @PostMapping("/check")
+    public Map<String, Boolean> checkConflict(@RequestBody Booking booking) {
+
+        List<Booking> conflicts = service.checkConflicts(booking);
+
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("conflict", !conflicts.isEmpty());
+
+        return response;
     }
 
 }

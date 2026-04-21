@@ -1,8 +1,8 @@
 import {BrowserRouter, Routes, Route} from "react-router-dom";
 import StudentDashboard from "./pages/student/DashboardPage";
 import DashboardPage from "./pages/admin/DashboardPage";
+import BookingPage from "./pages/student/BookingPage";
 import ResourcePage from "./pages/ResourcePage";
-import BookingPage from "./pages/BookingPage";
 import TicketPage from "./pages/TicketPage";
 import LoginPage from "./pages/LoginPage";
 
@@ -13,8 +13,9 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/admin/dashboard" element={<DashboardPage />} />
+        <Route path="/student/bookings/new" element={<BookingPage />} />
+        <Route path="/student/bookings" element={<BookingPage />} />
         <Route path="/resources" element={<ResourcePage />} />
-        <Route path="/bookings" element={<BookingPage />} />
         <Route path="/tickets" element={<TicketPage />} />  
       </Routes>
     </BrowserRouter>
