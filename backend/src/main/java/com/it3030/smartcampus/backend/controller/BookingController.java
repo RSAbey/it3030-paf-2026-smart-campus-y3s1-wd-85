@@ -2,6 +2,7 @@ package com.it3030.smartcampus.backend.controller;
 
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,9 +30,21 @@ public class BookingController {
         return service.getAllBookings();
     }
 
+    // @PostMapping
+    // public Booking createBooking(@RequestBody Booking booking) {
+    //     return service.createBooking(booking);
+    // }
+
     @PostMapping
-    public Booking createBooking(@RequestBody Booking booking) {
-        return service.createBooking(booking);
+    public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
+
+        try {
+            Booking saved = service.createBooking(booking);
+            return ResponseEntity.ok(saved);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
 }
