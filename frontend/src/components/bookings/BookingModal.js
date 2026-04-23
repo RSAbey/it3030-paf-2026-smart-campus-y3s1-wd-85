@@ -1,29 +1,37 @@
 import BookingForm from "./BookingForm";
 
-function BookingModal({ close }) {
+function BookingModal({ isOpen, onClose, onCreateBooking }) {
+  if (!isOpen) {
+    return null;
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-
-      {/* Background Blur */}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={close}
-      ></div>
+        className="relative z-10 w-full max-w-2xl rounded-2xl border border-white/70 bg-white p-6 shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Book Resource</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Fill in the details below to request a new reservation.
+            </p>
+          </div>
 
-      {/* Modal Box */}
-      <div className="relative bg-white rounded-xl shadow-xl w-[500px] p-6 z-50">
-        
-        {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Book Resource</h2>
-
-          <button onClick={close} className="text-gray-500 text-xl">
-            ✕
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+          >
+            x
           </button>
         </div>
 
-        {/* Form */}
-        <BookingForm close={close} />
+        <BookingForm close={onClose} onCreateBooking={onCreateBooking} />
       </div>
     </div>
   );

@@ -1,218 +1,171 @@
-import { useState, useEffect } from "react";
-import { createBooking } from "../../services/bookingService";
-import axios from "axios";
+import { useState } from "react";
 
-function BookingForm() {
-  const [form, setForm] = useState({
-    userId: 1,
-    resourceId: "",
+const resourceOptions = [
+  "Lab A-101",
+  "Auditorium",
+  "Meeting Room B-204",
+  "Computer Lab C-12",
+];
+
+function BookingForm({ close, onCreateBooking }) {
+  const [formData, setFormData] = useState({
+    resourceName: resourceOptions[0],
     date: "",
     startTime: "",
     endTime: "",
+    purpose: "",
   });
-
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [checking, setChecking] = useState(false);
-  const [conflict, setConflict] = useState(false);
 
-  // 🔥 LIVE CONFLICT CHECK
-  useEffect(() => {
-    if (form.resourceId && form.date && form.startTime && form.endTime) {
-      checkConflict();
-    }
-  }, [form]);
-
-  const checkConflict = async () => {
-    try {
-      setChecking(true);
-      const res = await axios.post(
-        "http://localhost:8080/api/booking/check",
-        form
-      );
-
-      setConflict(res.data.conflict);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setChecking(false);
-    }
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((currentData) => ({
+      ...currentData,
+      [name]: value,
+    }));
   };
 
-  // 🔥 VALIDATION
-  const validate = () => {
-    if (!form.resourceId || !form.date || !form.startTime || !form.endTime) {
-      return "All fields are required";
-    }
+  const handleSubmit = (event) => {
+    event.preventDefault();
 
-    if (form.endTime <= form.startTime) {
-      return "End time must be after start time";
-    }
-
-    return "";
-  };
-
-  // 🔥 SUBMIT
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
+    if (
+      !formData.resourceName ||
+      !formData.date ||
+      !formData.startTime ||
+      !formData.endTime
+    ) {
+      setError("Please fill in all required booking details.");
       return;
     }
 
-    if (conflict) {
-      setError("Time slot already booked!");
+    if (formData.endTime <= formData.startTime) {
+      setError("End time must be after the start time.");
       return;
     }
 
-    try {
-      await createBooking(form);
-      setSuccess("Booking successful!");
-      setError("");
+    setError("");
 
-      // reset form
-      setForm({
-        userId: 1,
-        resourceId: "",
-        date: "",
-        startTime: "",
-        endTime: "",
-      });
-    } catch (err) {
-      setError(err.response?.data || "Booking failed");
-    }
+    const newBooking = {
+      id: Date.now(),
+      resourceName: formData.resourceName,
+      date: formData.date,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      purpose: formData.purpose,
+      status: "PENDING",
+    };
+
+    // TODO: Create booking (POST /api/booking)
+    onCreateBooking(newBooking);
+    close();
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-xl">
-      <h2 className="text-xl font-semibold mb-4">Book Resource</h2>
-
-      {/* ERROR */}
+    <form onSubmit={handleSubmit} className="space-y-5">
       {error && (
-        <div className="bg-red-100 text-red-600 p-2 rounded mb-3 text-sm">
+        <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600">
           {error}
         </div>
       )}
 
-      {/* SUCCESS */}
-      {success && (
-        <div className="bg-green-100 text-green-600 p-2 rounded mb-3 text-sm">
-          {success}
-        </div>
-      )}
+      <div>
+        <label htmlFor="resourceName" className="text-sm font-medium text-gray-700">
+          Resource
+        </label>
+        <select
+          id="resourceName"
+          name="resourceName"
+          value={formData.resourceName}
+          onChange={handleChange}
+          className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        >
+          {resourceOptions.map((resource) => (
+            <option key={resource} value={resource}>
+              {resource}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-
-        {/* RESOURCE */}
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="text-sm text-gray-600">Resource</label>
+          <label htmlFor="date" className="text-sm font-medium text-gray-700">
+            Date
+          </label>
           <input
-            type="number"
-            placeholder="Enter resource ID"
-            className="w-full mt-1 p-2 border rounded"
-            value={form.resourceId}
-            onChange={(e) =>
-              setForm({ ...form, resourceId: e.target.value })
-            }
-          />
-        </div>
-
-        {/* DATE */}
-        <div>
-          <label className="text-sm text-gray-600">Date</label>
-          <input
+            id="date"
+            name="date"
             type="date"
-            className="w-full mt-1 p-2 border rounded"
             min={new Date().toISOString().split("T")[0]}
-            value={form.date}
-            onChange={(e) =>
-              setForm({ ...form, date: e.target.value })
-            }
+            value={formData.date}
+            onChange={handleChange}
+            className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
         </div>
 
-        {/* TIME */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-sm text-gray-600">Start Time</label>
-            <input
-              type="time"
-              className="w-full mt-1 p-2 border rounded"
-              value={form.startTime}
-              onChange={(e) =>
-                setForm({ ...form, startTime: e.target.value })
-              }
-            />
-          </div>
+        <div>
+          <label htmlFor="purpose" className="text-sm font-medium text-gray-700">
+            Purpose
+          </label>
+          <input
+            id="purpose"
+            name="purpose"
+            type="text"
+            placeholder="Study session"
+            value={formData.purpose}
+            onChange={handleChange}
+            className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </div>
+      </div>
 
-          <div>
-            <label className="text-sm text-gray-600">End Time</label>
-            <input
-              type="time"
-              className="w-full mt-1 p-2 border rounded"
-              value={form.endTime}
-              onChange={(e) =>
-                setForm({ ...form, endTime: e.target.value })
-              }
-            />
-          </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="startTime" className="text-sm font-medium text-gray-700">
+            Start Time
+          </label>
+          <input
+            id="startTime"
+            name="startTime"
+            type="time"
+            value={formData.startTime}
+            onChange={handleChange}
+            className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
         </div>
 
-        {/* 🔥 CONFLICT STATUS */}
-        {checking && (
-          <p className="text-blue-500 text-sm">Checking availability...</p>
-        )}
+        <div>
+          <label htmlFor="endTime" className="text-sm font-medium text-gray-700">
+            End Time
+          </label>
+          <input
+            id="endTime"
+            name="endTime"
+            type="time"
+            value={formData.endTime}
+            onChange={handleChange}
+            className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+        </div>
+      </div>
 
-        {!checking && form.startTime && form.endTime && (
-          <p
-            className={`text-sm ${
-              conflict ? "text-red-500" : "text-green-500"
-            }`}
-          >
-            {conflict
-              ? "❌ Time slot not available"
-              : "✅ Time slot available"}
-          </p>
-        )}
-
-        {/* BUTTON */}
+      <div className="flex justify-end gap-3 pt-2">
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+        >
+          Cancel
+        </button>
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+          className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
         >
-          Book Now
+          Submit Booking
         </button>
-      </form>
-    </div>
+      </div>
+    </form>
   );
-
-  function BookingForm({ close }) {
-
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-
-      // your API call...
-
-      alert("Booking created!");
-
-      close(); // 🔥 modal close after success
-    };
-
-    return (
-      <form onSubmit={handleSubmit}>
-        {/* your fields */}
-
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          Book
-        </button>
-      </form>
-    );
-  }
 }
 
 export default BookingForm;
