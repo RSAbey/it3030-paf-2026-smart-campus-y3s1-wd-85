@@ -26,6 +26,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         SELECT b FROM Booking b
         WHERE b.resourceId = :resourceId
         AND b.date = :date
+        AND b.status = 'APPROVED'
         AND (
             b.startTime < :endTime AND b.endTime > :startTime
         )

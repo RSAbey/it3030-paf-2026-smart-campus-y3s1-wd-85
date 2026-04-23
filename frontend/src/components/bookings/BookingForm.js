@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createBooking } from "../../services/bookingService";
+import { checkConflict, createBooking } from "../../services/bookingService";
 
 const resourceOptions = [
   "Lab A-101",
@@ -7,6 +7,13 @@ const resourceOptions = [
   "Meeting Room B-204",
   "Computer Lab C-12",
 ];
+
+const resourceMap = {
+  "Lab A-101": 1,
+  Auditorium: 2,
+  "Meeting Room B-204": 3,
+  "Computer Lab C-12": 4,
+};
 
 function BookingForm({ close, refresh }) {
   const [formData, setFormData] = useState({
@@ -17,13 +24,44 @@ function BookingForm({ close, refresh }) {
     purpose: "",
   });
   const [error, setError] = useState("");
+  const [conflict, setConflict] = useState(null);
+  const [checking, setChecking] = useState(false);
+
+  const handleConflictCheck = async (data) => {
+    if (!data.date || !data.startTime || !data.endTime) return;
+
+    try {
+      setChecking(true);
+
+      const payload = {
+        resourceId: resourceMap[data.resourceName],
+        date: data.date,
+        startTime: data.startTime,
+        endTime: data.endTime,
+      };
+
+      const res = await checkConflict(payload);
+
+      setConflict(res.conflict);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData((currentData) => ({
-      ...currentData,
-      [name]: value,
-    }));
+    setFormData((currentData) => {
+      const updated = {
+        ...currentData,
+        [name]: value,
+      };
+
+      setTimeout(() => handleConflictCheck(updated), 300);
+
+      return updated;
+    });
   };
 
   const handleSubmit = async (event) => {
@@ -44,12 +82,17 @@ function BookingForm({ close, refresh }) {
       return;
     }
 
+    if (conflict === true) {
+      setError("This time slot is already booked!");
+      return;
+    }
+
     setError("");
 
     try {
       const payload = {
         userId: 1,
-        resourceId: 1,
+        resourceId: resourceMap[formData.resourceName],
         date: formData.date,
         startTime: formData.startTime,
         endTime: formData.endTime,
@@ -152,6 +195,22 @@ function BookingForm({ close, refresh }) {
           />
         </div>
       </div>
+
+      {checking && (
+        <p className="text-sm text-gray-400">Checking availability...</p>
+      )}
+
+      {conflict === true && (
+        <p className="text-sm text-red-600">
+          ❌ Time slot already booked
+        </p>
+      )}
+
+      {conflict === false && (
+        <p className="text-sm text-green-600">
+          ✅ Time slot available
+        </p>
+      )}
 
       <div className="flex justify-end gap-3 pt-2">
         <button
