@@ -15,34 +15,20 @@ function BookingPage() {
   }, []);
 
   const loadBookings = async () => {
-  try {
-    const res = await getBookings();
-
-    console.log("API RESPONSE:", res); // 🔥 debug
-
-    // ✅ FIX HERE
-    if (Array.isArray(res)) {
-      setBookings(res);
-    } else if (Array.isArray(res.data)) {
-      setBookings(res.data);
-    } else if (Array.isArray(res.content)) {
-      setBookings(res.content);
-    } else {
-      setBookings([]);
+    try {
+      const data = await getBookings();
+      setBookings(data);
+    } catch (err) {
+      console.error("Error loading bookings:", err);
+    } finally {
+      setLoading(false);
     }
-
-  } catch (err) {
-    console.error("Error loading bookings:", err);
-    setBookings([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // 🔥 AFTER CREATE → REFRESH LIST
   const handleCreateBooking = async () => {
-    await loadBookings();
-    setOpen(false);
+    const data = await getBookings(); // 🔥 reload from backend
+    setBookings(data);
   };
 
   // 🔥 CANCEL (optional backend later)

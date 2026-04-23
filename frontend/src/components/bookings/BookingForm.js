@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createBooking } from "../../services/bookingService";
 
 const resourceOptions = [
   "Lab A-101",
@@ -7,7 +8,7 @@ const resourceOptions = [
   "Computer Lab C-12",
 ];
 
-function BookingForm({ close, onCreateBooking }) {
+function BookingForm({ close, refresh }) {
   const [formData, setFormData] = useState({
     resourceName: resourceOptions[0],
     date: "",
@@ -25,7 +26,7 @@ function BookingForm({ close, onCreateBooking }) {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (
@@ -45,19 +46,22 @@ function BookingForm({ close, onCreateBooking }) {
 
     setError("");
 
-    const newBooking = {
-      id: Date.now(),
-      resourceName: formData.resourceName,
-      date: formData.date,
-      startTime: formData.startTime,
-      endTime: formData.endTime,
-      purpose: formData.purpose,
-      status: "PENDING",
-    };
+    try {
+      const payload = {
+        userId: 1,
+        resourceId: 1,
+        date: formData.date,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+      };
 
-    // TODO: Create booking (POST /api/booking)
-    onCreateBooking(newBooking);
-    close();
+      await createBooking(payload);
+
+      refresh();
+      close();
+    } catch (err) {
+      setError(err.response?.data || "Booking failed!");
+    }
   };
 
   return (
