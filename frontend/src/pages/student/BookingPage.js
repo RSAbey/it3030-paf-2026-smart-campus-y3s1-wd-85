@@ -2,60 +2,61 @@ import { useEffect, useState } from "react";
 import StudentLayout from "../../components/layout/StudentLayout";
 import BookingCard from "../../components/bookings/BookingCard";
 import BookingModal from "../../components/bookings/BookingModal";
-
-const mockBookings = [
-  {
-    id: 1,
-    resourceName: "Lab A-101",
-    date: "2026-04-28",
-    startTime: "09:00",
-    endTime: "11:00",
-    status: "APPROVED",
-    qrCode: "SC-BOOK-10021",
-  },
-  {
-    id: 2,
-    resourceName: "Auditorium",
-    date: "2026-04-30",
-    startTime: "14:00",
-    endTime: "16:00",
-    status: "PENDING",
-  },
-  {
-    id: 3,
-    resourceName: "Meeting Room B-204",
-    date: "2026-05-02",
-    startTime: "10:00",
-    endTime: "11:30",
-    status: "REJECTED",
-    reason: "This room is reserved for a faculty event during the requested time.",
-  },
-];
+import { getBookings } from "../../services/bookingService";
 
 function BookingPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // 🔥 LOAD BOOKINGS FROM BACKEND
   useEffect(() => {
-    // TODO: Fetch bookings from backend (GET /api/booking)
-    setBookings(mockBookings);
+    loadBookings();
   }, []);
 
-  const handleCreateBooking = (newBooking) => {
-    setBookings((currentBookings) => [newBooking, ...currentBookings]);
-    setIsModalOpen(false);
+  const loadBookings = async () => {
+  try {
+    const res = await getBookings();
+
+    console.log("API RESPONSE:", res); // 🔥 debug
+
+    // ✅ FIX HERE
+    if (Array.isArray(res)) {
+      setBookings(res);
+    } else if (Array.isArray(res.data)) {
+      setBookings(res.data);
+    } else if (Array.isArray(res.content)) {
+      setBookings(res.content);
+    } else {
+      setBookings([]);
+    }
+
+  } catch (err) {
+    console.error("Error loading bookings:", err);
+    setBookings([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // 🔥 AFTER CREATE → REFRESH LIST
+  const handleCreateBooking = async () => {
+    await loadBookings();
+    setOpen(false);
   };
 
+  // 🔥 CANCEL (optional backend later)
   const handleCancelBooking = (bookingId) => {
-    // TODO: Cancel booking (PUT /api/booking/{id})
-    setBookings((currentBookings) =>
-      currentBookings.filter((booking) => booking.id !== bookingId)
+    setBookings((current) =>
+      current.filter((b) => b.id !== bookingId)
     );
   };
 
   return (
     <StudentLayout>
       <div className="mx-auto max-w-6xl">
+
+        {/* HEADER */}
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
@@ -66,13 +67,26 @@ function BookingPage() {
 
           <button
             type="button"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => setOpen(true)}
             className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
           >
             + Book Resource
           </button>
         </div>
 
+        {/* LOADING */}
+        {loading && (
+          <p className="text-gray-500 text-sm">Loading bookings...</p>
+        )}
+
+        {/* EMPTY */}
+        {!loading && bookings.length === 0 && (
+          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500 shadow-sm">
+            No bookings found yet. Use the button above to create your first reservation.
+          </div>
+        )}
+
+        {/* LIST */}
         <div className="space-y-4">
           {bookings.map((booking) => (
             <BookingCard
@@ -83,18 +97,15 @@ function BookingPage() {
           ))}
         </div>
 
-        {bookings.length === 0 && (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500 shadow-sm">
-            No bookings found yet. Use the button above to create your first reservation.
-          </div>
-        )}
       </div>
 
-      <BookingModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onCreateBooking={handleCreateBooking}
-      />
+      {/* 🔥 MODAL */}
+      {open && (
+        <BookingModal
+          close={() => setOpen(false)}
+          refresh={handleCreateBooking}
+        />
+      )}
     </StudentLayout>
   );
 }
