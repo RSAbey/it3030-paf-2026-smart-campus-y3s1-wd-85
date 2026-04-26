@@ -12,5 +12,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     long countByUserId(Long userId);
 
+    List<Ticket> findByStatus(String status);
+
     List<Ticket> findTop5ByUserIdOrderByIdDesc(Long userId);
 }

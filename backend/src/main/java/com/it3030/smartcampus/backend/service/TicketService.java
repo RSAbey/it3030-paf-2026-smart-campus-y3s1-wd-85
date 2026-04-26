@@ -32,6 +32,14 @@ public class TicketService {
         return ticketRepository.findAll();
     }
 
+    public List<Ticket> getTicketsByStatus(String status) {
+        if (status == null || status.isBlank()) {
+            throw new RuntimeException("Status is required");
+        }
+
+        return ticketRepository.findByStatus(status);
+    }
+
     public Ticket getTicketById(Long id) {
         return ticketRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + id));

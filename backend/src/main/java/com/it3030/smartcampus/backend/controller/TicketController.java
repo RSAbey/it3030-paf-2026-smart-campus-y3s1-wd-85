@@ -39,6 +39,11 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
 
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<Ticket>> getTicketsByStatus(@PathVariable String status) {
+        return ResponseEntity.ok(ticketService.getTicketsByStatus(status));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Ticket> getTicketById(@PathVariable Long id) {
         return ResponseEntity.ok(ticketService.getTicketById(id));
