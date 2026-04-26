@@ -1,6 +1,11 @@
 import { Bell } from "lucide-react";
 
-function Navbar() {
+function Navbar({ role = "admin" }) {
+  const isStudent = role === "student";
+  const userName = isStudent ? "John Doe" : "Admin User";
+  const userEmail = isStudent ? "student@campus.edu" : "admin@campus.edu";
+  const userInitials = isStudent ? "JD" : "AU";
+
   return (
     <div className="flex justify-between items-center bg-white px-6 py-3 border-b">
       
@@ -24,12 +29,12 @@ function Navbar() {
         {/* User */}
         <div className="flex items-center gap-2">
           <div className="text-right">
-            <p className="text-sm font-medium">Admin User</p>
-            <p className="text-xs text-gray-500">admin@campus.edu</p>
+            <p className="text-sm font-medium">{userName}</p>
+            <p className="text-xs text-gray-500">{userEmail}</p>
           </div>
 
           <div className="w-9 h-9 bg-blue-500 text-white flex items-center justify-center rounded-full">
-            AU
+            {userInitials}
           </div>
         </div>
 
