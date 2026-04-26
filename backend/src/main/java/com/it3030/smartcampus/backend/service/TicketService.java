@@ -20,6 +20,7 @@ public class TicketService {
     }
 
     public Ticket createTicket(Ticket ticket) {
+        validateTicket(ticket);
         ticket.setCreatedAt(LocalDateTime.now());
         ticket.setUpdatedAt(LocalDateTime.now());
 
@@ -73,6 +74,7 @@ public class TicketService {
     }
 
     public Ticket updateTicket(Long id, Ticket updatedTicket) {
+        validateTicket(updatedTicket);
         Ticket existingTicket = ticketRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + id));
 
@@ -148,5 +150,46 @@ public class TicketService {
         long minutes = duration.toMinutesPart();
 
         return hours + " hours " + minutes + " minutes";
+    }
+
+    private void validateTicket(Ticket ticket) {
+        if (ticket.getTitle() == null || ticket.getTitle().isBlank()) {
+            throw new RuntimeException("Title is required");
+        }
+
+        if (ticket.getDescription() == null || ticket.getDescription().isBlank()) {
+            throw new RuntimeException("Description is required");
+        }
+
+        if (ticket.getCategory() == null || ticket.getCategory().isBlank()) {
+            throw new RuntimeException("Category is required");
+        }
+
+        if (ticket.getPriority() == null || ticket.getPriority().isBlank()) {
+            throw new RuntimeException("Priority is required");
+        }
+
+        List<String> allowedPriorities = Arrays.asList("LOW", "MEDIUM", "HIGH", "CRITICAL");
+        if (!allowedPriorities.contains(ticket.getPriority())) {
+            throw new RuntimeException("Invalid ticket priority: " + ticket.getPriority());
+        }
+
+        if (ticket.getLocation() == null || ticket.getLocation().isBlank()) {
+            throw new RuntimeException("Location is required");
+        }
+
+        if (ticket.getPreferredContact() == null || ticket.getPreferredContact().isBlank()) {
+            throw new RuntimeException("Preferred contact is required");
+        }
+
+        if (ticket.getStatus() != null && !ticket.getStatus().isBlank()) {
+            List<String> allowedStatuses = Arrays.asList(
+                    "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED", "REJECTED"
+            );
+
+            if (!allowedStatuses.contains(ticket.getStatus())) {
+                throw new RuntimeException("Invalid ticket status: " + ticket.getStatus());
+            }
+        }
     }
 }
