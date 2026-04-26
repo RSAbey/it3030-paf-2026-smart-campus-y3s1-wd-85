@@ -4,6 +4,7 @@ import com.it3030.smartcampus.backend.entity.Ticket;
 import com.it3030.smartcampus.backend.repository.TicketRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -109,5 +110,25 @@ public class TicketService {
         ticket.setUpdatedAt(LocalDateTime.now());
 
         return ticketRepository.save(ticket);
+    }
+
+    public String getTicketSlaDuration(Long id) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + id));
+
+        LocalDateTime startTime = ticket.getCreatedAt();
+        LocalDateTime endTime;
+
+        if ("RESOLVED".equals(ticket.getStatus()) || "CLOSED".equals(ticket.getStatus())) {
+            endTime = ticket.getUpdatedAt();
+        } else {
+            endTime = LocalDateTime.now();
+        }
+
+        Duration duration = Duration.between(startTime, endTime);
+        long hours = duration.toHours();
+        long minutes = duration.toMinutesPart();
+
+        return hours + " hours " + minutes + " minutes";
     }
 }

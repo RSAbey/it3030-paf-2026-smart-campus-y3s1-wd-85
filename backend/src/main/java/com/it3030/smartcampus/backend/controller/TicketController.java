@@ -54,6 +54,14 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getTicketById(id));
     }
 
+    @GetMapping("/{id}/sla")
+    public ResponseEntity<Map<String, Object>> getTicketSlaDuration(@PathVariable Long id) {
+        return ResponseEntity.ok(Map.of(
+                "ticketId", id,
+                "slaDuration", ticketService.getTicketSlaDuration(id)
+        ));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<Ticket> updateTicket(@PathVariable Long id, @RequestBody Ticket ticket) {
         return ResponseEntity.ok(ticketService.updateTicket(id, ticket));
