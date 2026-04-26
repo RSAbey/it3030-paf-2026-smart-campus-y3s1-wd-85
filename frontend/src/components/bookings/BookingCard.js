@@ -4,6 +4,7 @@ const statusStyles = {
   APPROVED: "bg-green-100 text-green-700",
   PENDING: "bg-yellow-100 text-yellow-700",
   REJECTED: "bg-red-100 text-red-700",
+  CANCELLED: "bg-gray-100 text-gray-700",
 };
 
 function formatBookingDate(date) {
@@ -15,7 +16,7 @@ function formatBookingDate(date) {
   });
 }
 
-function BookingCard({ booking, onCancel }) {
+function BookingCard({ booking, onCancel, onEdit, onDelete, canDelete = false }) {
   const { id, resourceName, date, startTime, endTime, status, qrCode, reason } = booking;
 
   return (
@@ -40,7 +41,9 @@ function BookingCard({ booking, onCancel }) {
         </div>
 
         <span
-          className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[status]}`}
+          className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${
+            statusStyles[status] || "bg-gray-100 text-gray-700"
+          }`}
         >
           {status}
         </span>
@@ -74,15 +77,36 @@ function BookingCard({ booking, onCancel }) {
         </div>
       )}
 
-      {status === "PENDING" && (
-        <div className="mt-4 flex justify-end">
-          <button
-            type="button"
-            onClick={() => onCancel(id)}
-            className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
-          >
-            Cancel Booking
-          </button>
+      {(status === "PENDING" || canDelete) && (
+        <div className="mt-4 flex justify-end gap-3">
+          {status === "PENDING" && (
+            <>
+              <button
+                type="button"
+                onClick={() => onEdit(booking)}
+                className="rounded-lg border border-blue-200 px-4 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-50"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => onCancel(id)}
+                className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+              >
+                Cancel Booking
+              </button>
+            </>
+          )}
+
+          {canDelete && onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(id)}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            >
+              Delete
+            </button>
+          )}
         </div>
       )}
     </div>

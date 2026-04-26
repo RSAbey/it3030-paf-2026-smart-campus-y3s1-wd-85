@@ -12,6 +12,16 @@ function DashboardPage() {
   const userId = 1; // Replace with actual user ID from auth context
   const [open, setOpen] = useState(false);
 
+  const handleBookingRefresh = async () => {
+    try {
+      const res = await getStudentDashboard(userId);
+      setData(res.data);
+      console.log("API response:", res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     getStudentDashboard(userId)
       .then((res) => {
@@ -65,7 +75,7 @@ function DashboardPage() {
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
           + Book Resource
         </button>
-        {open && <BookingModal close={() => setOpen(false)} />}
+        {open && <BookingModal close={() => setOpen(false)} refresh={handleBookingRefresh} />}
 
         <button className="border border-blue-600 text-blue-600 py-3 rounded-lg font-medium">
           + Create Ticket

@@ -15,39 +15,81 @@ import com.it3030.smartcampus.backend.repository.BookingRepository;
 @Service
 public class BookingService {
 
-     @Autowired
+    @Autowired
     private BookingRepository bookingRepo;
 
     public Booking createBooking(Booking booking) {
-
-        // 🔥 1. Check conflicts
         List<Booking> conflicts = bookingRepo.findConflicts(
-                booking.getResourceId(),
-                booking.getDate(),
-                booking.getStartTime(),
-                booking.getEndTime()
+            booking.getResourceId(),
+            booking.getDate(),
+            booking.getStartTime(),
+            booking.getEndTime()
         );
 
         if (!conflicts.isEmpty()) {
-            throw new RuntimeException("❌ Time slot already booked!");
+            throw new RuntimeException("Time slot already booked!");
         }
 
-        // 🔥 2. Save booking
-        booking.setStatus("APPROVED"); // or PENDING
+        booking.setStatus("PENDING");
         return bookingRepo.save(booking);
     }
-
-    // public Booking createBooking(Booking booking) {
-    //     throw new UnsupportedOperationException("Not supported yet.");
-    // }
 
     public List<Booking> getAllBookings() {
         return bookingRepo.findAll();
     }
 
+    public List<Booking> getBookingsByUser(Long userId) {
+        return bookingRepo.findByUserId(userId);
+    }
+
+    public Booking cancelBooking(Long id) {
+        Booking booking = bookingRepo.findById(id)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (!"PENDING".equals(booking.getStatus())) {
+            throw new RuntimeException("Only pending bookings can be cancelled");
+        }
+
+        booking.setStatus("CANCELLED");
+        return bookingRepo.save(booking);
+    }
+
+    public Booking updateBooking(Long id, Booking updatedBooking) {
+        Booking booking = bookingRepo.findById(id)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (!"PENDING".equals(booking.getStatus())) {
+            throw new RuntimeException("Only pending bookings can be edited");
+        }
+
+        List<Booking> conflicts = bookingRepo.findConflicts(
+            booking.getResourceId(),
+            updatedBooking.getDate(),
+            updatedBooking.getStartTime(),
+            updatedBooking.getEndTime()
+        );
+
+        if (!conflicts.isEmpty()) {
+            throw new RuntimeException("Time slot already booked!");
+        }
+
+        booking.setDate(updatedBooking.getDate());
+        booking.setStartTime(updatedBooking.getStartTime());
+        booking.setEndTime(updatedBooking.getEndTime());
+
+        return bookingRepo.save(booking);
+    }
+
+    public void deleteBooking(Long id) {
+        if (!bookingRepo.existsById(id)) {
+            throw new RuntimeException("Booking not found");
+        }
+
+        bookingRepo.deleteById(id);
+    }
+
     @PostMapping("/check")
     public Map<String, Boolean> checkConflict(@RequestBody Booking booking) {
-
         List<Booking> conflicts = bookingRepo.findConflicts(
             booking.getResourceId(),
             booking.getDate(),
@@ -62,12 +104,11 @@ public class BookingService {
     }
 
     public List<Booking> checkConflicts(Booking booking) {
-    return bookingRepo.findConflicts(
-        booking.getResourceId(),
-        booking.getDate(),
-        booking.getStartTime(),
-        booking.getEndTime()
-    );
-}
-
+        return bookingRepo.findConflicts(
+            booking.getResourceId(),
+            booking.getDate(),
+            booking.getStartTime(),
+            booking.getEndTime()
+        );
+    }
 }

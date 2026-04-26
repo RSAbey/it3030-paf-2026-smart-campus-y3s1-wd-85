@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { checkConflict, createBooking } from "../../services/bookingService";
+import { checkConflict, createBooking, updateBooking } from "../../services/bookingService";
 
 const resourceOptions = [
   "Lab A-101",
@@ -15,20 +15,42 @@ const resourceMap = {
   "Computer Lab C-12": 4,
 };
 
-function BookingForm({ close, refresh }) {
+const resourceNamesById = {
+  1: "Lab A-101",
+  2: "Auditorium",
+  3: "Meeting Room B-204",
+  4: "Computer Lab C-12",
+};
+
+function getInitialResourceName(booking) {
+  if (booking?.resourceName) {
+    return booking.resourceName;
+  }
+
+  if (booking?.resourceId && resourceNamesById[booking.resourceId]) {
+    return resourceNamesById[booking.resourceId];
+  }
+
+  return resourceOptions[0];
+}
+
+function BookingForm({ close, refresh = async () => {}, booking }) {
   const [formData, setFormData] = useState({
-    resourceName: resourceOptions[0],
-    date: "",
-    startTime: "",
-    endTime: "",
-    purpose: "",
+    resourceName: getInitialResourceName(booking),
+    date: booking?.date || "",
+    startTime: booking?.startTime || "",
+    endTime: booking?.endTime || "",
+    purpose: booking?.purpose || "",
   });
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(null);
   const [checking, setChecking] = useState(false);
 
   const handleConflictCheck = async (data) => {
-    if (!data.date || !data.startTime || !data.endTime) return;
+    if (!data.date || !data.startTime || !data.endTime) {
+      setConflict(null);
+      return;
+    }
 
     try {
       setChecking(true);
@@ -52,6 +74,7 @@ function BookingForm({ close, refresh }) {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+
     setFormData((currentData) => {
       const updated = {
         ...currentData,
@@ -91,16 +114,20 @@ function BookingForm({ close, refresh }) {
 
     try {
       const payload = {
-        userId: 1,
+        userId: booking?.userId || 1,
         resourceId: resourceMap[formData.resourceName],
         date: formData.date,
         startTime: formData.startTime,
         endTime: formData.endTime,
       };
 
-      await createBooking(payload);
+      if (booking?.id) {
+        await updateBooking(booking.id, payload);
+      } else {
+        await createBooking(payload);
+      }
 
-      refresh();
+      await refresh();
       close();
     } catch (err) {
       setError(err.response?.data || "Booking failed!");
@@ -202,13 +229,13 @@ function BookingForm({ close, refresh }) {
 
       {conflict === true && (
         <p className="text-sm text-red-600">
-          ❌ Time slot already booked
+          Time slot already booked
         </p>
       )}
 
       {conflict === false && (
         <p className="text-sm text-green-600">
-          ✅ Time slot available
+          Time slot available
         </p>
       )}
 
