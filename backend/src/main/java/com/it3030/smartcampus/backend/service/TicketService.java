@@ -68,6 +68,14 @@ public class TicketService {
         return ticketRepository.findByPriority(priority);
     }
 
+    public List<Ticket> searchTickets(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            throw new RuntimeException("Search keyword is required");
+        }
+
+        return ticketRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword);
+    }
+
     public Ticket getTicketById(Long id) {
         return ticketRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + id));

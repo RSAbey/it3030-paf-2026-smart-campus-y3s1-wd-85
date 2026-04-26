@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -57,6 +58,11 @@ public class TicketController {
     @GetMapping("/priority/{priority}")
     public ResponseEntity<List<Ticket>> getTicketsByPriority(@PathVariable String priority) {
         return ResponseEntity.ok(ticketService.getTicketsByPriority(priority));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Ticket>> searchTickets(@RequestParam String keyword) {
+        return ResponseEntity.ok(ticketService.searchTickets(keyword));
     }
 
     @GetMapping("/{id}")
