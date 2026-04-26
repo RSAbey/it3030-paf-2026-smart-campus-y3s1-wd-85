@@ -40,6 +40,14 @@ public class TicketService {
         return ticketRepository.findByStatus(status);
     }
 
+    public List<Ticket> getTicketsByPriority(String priority) {
+        if (priority == null || priority.isBlank()) {
+            throw new RuntimeException("Priority is required");
+        }
+
+        return ticketRepository.findByPriority(priority);
+    }
+
     public Ticket getTicketById(Long id) {
         return ticketRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + id));
