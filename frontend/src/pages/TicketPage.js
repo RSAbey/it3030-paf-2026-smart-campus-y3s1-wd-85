@@ -1,26 +1,36 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../components/layout/AdminLayout";
-import { getAllTickets } from "../services/ticketService";
+import { createTicket, getAllTickets } from "../services/ticketService";
 
 function TicketPage() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    category: "",
+    priority: "",
+    location: "",
+    preferredContact: "",
+  });
+
+  const loadTickets = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await getAllTickets();
+      setTickets(response.data);
+    } catch (err) {
+      setError("Failed to load tickets.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadTickets = async () => {
-      try {
-        setLoading(true);
-        setError("");
-        const response = await getAllTickets();
-        setTickets(response.data);
-      } catch (err) {
-        setError("Failed to load tickets.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadTickets();
   }, []);
 
@@ -37,9 +47,130 @@ function TicketPage() {
     return date.toLocaleString();
   };
 
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      category: "",
+      priority: "",
+      location: "",
+      preferredContact: "",
+    });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    try {
+      setSubmitting(true);
+      setError("");
+
+      await createTicket({
+        ...formData,
+        userId: 1,
+        status: "OPEN",
+        assignedTechnician: "Nimal",
+      });
+
+      resetForm();
+      setShowForm(false);
+      await loadTickets();
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to create ticket.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-bold mb-6">Tickets</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Tickets</h1>
+        <button
+          type="button"
+          onClick={() => setShowForm((prev) => !prev)}
+          className="border border-blue-600 text-blue-600 py-2 px-4 rounded-lg font-medium"
+        >
+          + Create Ticket
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="bg-white p-5 rounded-xl shadow mb-6">
+          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+            <input
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              placeholder="Title"
+              className="border rounded-lg px-3 py-2 text-sm"
+            />
+            <input
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              placeholder="Category"
+              className="border rounded-lg px-3 py-2 text-sm"
+            />
+            <input
+              name="priority"
+              value={formData.priority}
+              onChange={handleChange}
+              placeholder="Priority"
+              className="border rounded-lg px-3 py-2 text-sm"
+            />
+            <input
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              placeholder="Location"
+              className="border rounded-lg px-3 py-2 text-sm"
+            />
+            <input
+              name="preferredContact"
+              value={formData.preferredContact}
+              onChange={handleChange}
+              placeholder="Preferred Contact"
+              className="border rounded-lg px-3 py-2 text-sm"
+            />
+            <div />
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Description"
+              className="border rounded-lg px-3 py-2 text-sm col-span-2 min-h-[100px]"
+            />
+            <div className="col-span-2 flex gap-3">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium disabled:opacity-70"
+              >
+                {submitting ? "Creating..." : "Create Ticket"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  setShowForm(false);
+                }}
+                className="border border-gray-300 text-gray-600 py-2 px-4 rounded-lg font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="bg-white p-5 rounded-xl shadow">
         {loading && <p className="text-sm text-gray-500">Loading tickets...</p>}
