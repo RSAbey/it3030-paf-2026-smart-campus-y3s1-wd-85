@@ -15,6 +15,11 @@ export const getBookings = async (userId) => {
   return res.data;
 };
 
+export const getAllBookings = async () => {
+  const res = await axios.get("/booking");
+  return res.data;
+};
+
 export const checkConflict = async (data) => {
   const res = await axios.post("/booking/check", data);
   return res.data;
@@ -33,6 +38,16 @@ export const cancelBooking = async (id) => {
 
 export const updateBooking = async (id, data) => {
   const res = await axios.put(`/booking/${id}`, data);
+  return res.data;
+};
+
+export const approveBooking = async (id) => {
+  const res = await axios.put(`/booking/${id}/approve`);
+  return res.data;
+};
+
+export const rejectBooking = async (id) => {
+  const res = await axios.put(`/booking/${id}/reject`);
   return res.data;
 };
 

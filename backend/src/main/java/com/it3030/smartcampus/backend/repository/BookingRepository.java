@@ -2,6 +2,7 @@ package com.it3030.smartcampus.backend.repository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     long countByUserIdAndStatus(Long userId, String status);
 
     List<Booking> findByUserId(Long userId);
+
+    Optional<Booking> findByQrCode(String qrCode);
 
     List<Booking> findTop5ByUserIdOrderByIdDesc(Long userId);
 

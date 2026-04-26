@@ -41,6 +41,16 @@ public class BookingController {
         return service.getBookingsByUser(userId);
     }
 
+    @GetMapping("/verify/{qrCode}")
+    public ResponseEntity<?> verifyQR(@PathVariable String qrCode) {
+        try {
+            Booking booking = service.verifyBookingByQrCode(qrCode);
+            return ResponseEntity.ok(booking);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @PostMapping
     public ResponseEntity<Booking> createBooking(@RequestBody Booking booking) {
         return ResponseEntity.ok(service.createBooking(booking));
@@ -58,16 +68,26 @@ public class BookingController {
     }
 
     @PutMapping("/{id}/approve")
-    public ResponseEntity<Booking> approveBooking(@PathVariable Long id) {
+    public ResponseEntity<?> approveBooking(@PathVariable Long id) {
         logger.info("Received approve booking request for id={}", id);
-        return ResponseEntity.ok(service.approveBooking(id));
+        try {
+            Booking booking = service.approveBooking(id);
+            return ResponseEntity.ok(booking);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PutMapping("/{id}/reject")
-    public ResponseEntity<Booking> rejectBooking(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
+    public ResponseEntity<?> rejectBooking(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
         logger.info("Received reject booking request for id={}", id);
-        String reason = body != null ? body.get("reason") : null;
-        return ResponseEntity.ok(service.rejectBooking(id, reason));
+        try {
+            String reason = body != null ? body.get("reason") : null;
+            Booking booking = service.rejectBooking(id, reason);
+            return ResponseEntity.ok(booking);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")

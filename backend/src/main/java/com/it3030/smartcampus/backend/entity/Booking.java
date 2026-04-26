@@ -29,4 +29,6 @@ public class Booking {
 
     // Optional rejection/cancellation/admin note
     private String reason;
+
+    private String qrCode;
 }

@@ -95,22 +95,47 @@ public class BookingService {
 
     public Booking approveBooking(Long id) {
         logger.info("Approve booking requested for id={}", id);
-        Booking booking = getPendingBookingOrThrow(id);
+        Booking booking = getBookingOrThrow(id);
+
+        if (!STATUS_PENDING.equals(booking.getStatus())) {
+            logger.warn("Booking id={} cannot be approved because status is {}", id, booking.getStatus());
+            throw new RuntimeException("Only pending bookings can be approved");
+        }
 
         booking.setStatus(STATUS_APPROVED);
         booking.setReason(null);
+        booking.setQrCode("BOOKING-" + booking.getId());
 
         return bookingRepo.save(booking);
     }
 
     public Booking rejectBooking(Long id, String reason) {
         logger.info("Reject booking requested for id={}", id);
-        Booking booking = getPendingBookingOrThrow(id);
+        Booking booking = getBookingOrThrow(id);
+
+        if (!STATUS_PENDING.equals(booking.getStatus())) {
+            logger.warn("Booking id={} cannot be rejected because status is {}", id, booking.getStatus());
+            throw new RuntimeException("Only pending bookings can be rejected");
+        }
 
         booking.setStatus(STATUS_REJECTED);
         booking.setReason(reason);
+        booking.setQrCode(null);
 
         return bookingRepo.save(booking);
+    }
+
+    public Booking verifyBookingByQrCode(String qrCode) {
+        logger.info("QR verification requested for qrCode={}", qrCode);
+
+        Booking booking = bookingRepo.findByQrCode(qrCode)
+            .orElseThrow(() -> new RuntimeException("Invalid QR Code"));
+
+        if (!STATUS_APPROVED.equals(booking.getStatus())) {
+            throw new RuntimeException("Booking not approved");
+        }
+
+        return booking;
     }
 
     public void deleteBooking(Long id) {

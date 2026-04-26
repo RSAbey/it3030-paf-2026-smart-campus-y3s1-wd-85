@@ -1,11 +1,12 @@
-import {BrowserRouter, Routes, Route} from "react-router-dom";
-import StudentDashboard from "./pages/student/DashboardPage";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import QRScanner from "./components/QRScanner";
 import DashboardPage from "./pages/admin/DashboardPage";
 import AdminBookingPage from "./pages/admin/AdminBookingPage";
-import BookingPage from "./pages/student/BookingPage";
+import LoginPage from "./pages/LoginPage";
 import ResourcePage from "./pages/ResourcePage";
 import TicketPage from "./pages/TicketPage";
-import LoginPage from "./pages/LoginPage";
+import BookingPage from "./pages/student/BookingPage";
+import StudentDashboard from "./pages/student/DashboardPage";
 
 function App() {
   return (
@@ -13,16 +14,17 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/student/dashboard" element={<StudentDashboard />} />
-        <Route path="/admin/dashboard" element={<DashboardPage />} />
-        <Route path="/admin/bookings" element={<AdminBookingPage />} />
         <Route path="/student/bookings/new" element={<BookingPage />} />
         <Route path="/student/bookings" element={<BookingPage />} />
+        <Route path="/admin/dashboard" element={<DashboardPage />} />
+        <Route path="/admin/bookings" element={<AdminBookingPage />} />
+        <Route path="/admin/scan" element={<QRScanner />} />
+        <Route path="/admin/resources" element={<ResourcePage />} />
         <Route path="/resources" element={<ResourcePage />} />
-        <Route path="/tickets" element={<TicketPage />} />  
+        <Route path="/tickets" element={<TicketPage />} />
       </Routes>
     </BrowserRouter>
   );
-  
 }
 
 export default App;
