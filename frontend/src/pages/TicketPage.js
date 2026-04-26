@@ -135,71 +135,86 @@ function TicketPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white p-5 rounded-xl shadow mb-6">
-          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-            <input
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="Title"
-              className="border rounded-lg px-3 py-2 text-sm"
-            />
-            <input
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              placeholder="Category"
-              className="border rounded-lg px-3 py-2 text-sm"
-            />
-            <input
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              placeholder="Priority"
-              className="border rounded-lg px-3 py-2 text-sm"
-            />
-            <input
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="Location"
-              className="border rounded-lg px-3 py-2 text-sm"
-            />
-            <input
-              name="preferredContact"
-              value={formData.preferredContact}
-              onChange={handleChange}
-              placeholder="Preferred Contact"
-              className="border rounded-lg px-3 py-2 text-sm"
-            />
-            <div />
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Description"
-              className="border rounded-lg px-3 py-2 text-sm col-span-2 min-h-[100px]"
-            />
-            <div className="col-span-2 flex gap-3">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium disabled:opacity-70"
-              >
-                {submitting ? "Creating..." : "Create Ticket"}
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white w-full max-w-2xl p-6 rounded-xl shadow-xl">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-semibold text-gray-800">Create Ticket</h2>
               <button
                 type="button"
                 onClick={() => {
                   resetForm();
                   setShowForm(false);
                 }}
-                className="border border-gray-300 text-gray-600 py-2 px-4 rounded-lg font-medium"
+                className="text-gray-500 text-sm"
               >
-                Cancel
+                Close
               </button>
             </div>
-          </form>
+
+            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+              <input
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                placeholder="Title"
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+              <input
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                placeholder="Category"
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+              <input
+                name="priority"
+                value={formData.priority}
+                onChange={handleChange}
+                placeholder="Priority"
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+              <input
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                placeholder="Location"
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+              <input
+                name="preferredContact"
+                value={formData.preferredContact}
+                onChange={handleChange}
+                placeholder="Preferred Contact"
+                className="border rounded-lg px-3 py-2 text-sm col-span-2"
+              />
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Description"
+                className="border rounded-lg px-3 py-2 text-sm col-span-2 min-h-[120px]"
+              />
+              <div className="col-span-2 flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForm();
+                    setShowForm(false);
+                  }}
+                  className="border border-gray-300 text-gray-600 py-2 px-4 rounded-lg font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium disabled:opacity-70"
+                >
+                  {submitting ? "Creating..." : "Create Ticket"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
