@@ -14,8 +14,9 @@ function App() {
         <Route path="/admin/dashboard" element={<DashboardPage />} />
         <Route path="/resources" element={<ResourcePage />} />
         <Route path="/bookings" element={<BookingPage />} />
-        <Route path="/tickets" element={<TicketPage />} />
-        <Route path="/student/tickets" element={<TicketPage />} />
+        <Route path="/tickets" element={<TicketPage role="student" />} />
+        <Route path="/student/tickets" element={<TicketPage role="student" />} />
+        <Route path="/admin/tickets" element={<TicketPage role="admin" />} />
       </Routes>
     </BrowserRouter>
   );
