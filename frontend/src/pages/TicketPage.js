@@ -35,7 +35,6 @@ const STATUS_FILTER_OPTIONS = [
   { value: "IN_PROGRESS", label: "In Progress" },
   { value: "RESOLVED", label: "Resolved" },
   { value: "CLOSED", label: "Closed" },
-  { value: "REJECTED", label: "Rejected" },
 ];
 
 const CURRENT_USER_ID = 1;
@@ -45,6 +44,7 @@ function TicketPage({ role = "student" }) {
   const isStudent = role === "student";
   const isAdmin = role === "admin";
   const Layout = isStudent ? StudentLayout : AdminLayout;
+  const [allTickets, setAllTickets] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -74,35 +74,41 @@ function TicketPage({ role = "student" }) {
     preferredContact: "",
   });
 
+  const sortTicketsByNewest = (ticketList) =>
+    [...ticketList].sort(
+      (firstTicket, secondTicket) =>
+        new Date(secondTicket.createdAt || 0) - new Date(firstTicket.createdAt || 0)
+    );
+
+  const matchesCurrentFilters = (ticket) => {
+    const trimmedKeyword = searchKeyword.trim();
+    const loweredKeyword = trimmedKeyword.toLowerCase();
+
+    const matchesKeyword =
+      !trimmedKeyword ||
+      [
+        ticket.title,
+        ticket.description,
+        ticket.category,
+        ticket.status,
+        ticket.priority,
+      ].some((value) => value && value.toLowerCase().includes(loweredKeyword));
+
+    const matchesStatus =
+      statusFilter === "ALL" || ticket.status === statusFilter;
+
+    return matchesKeyword && matchesStatus;
+  };
+
   const loadTickets = async () => {
     try {
       setLoading(true);
       setError("");
-      const trimmedKeyword = searchKeyword.trim();
       const response = isStudent
         ? await getTicketsByUserId(CURRENT_USER_ID)
         : await getAllTickets();
 
-      const loweredKeyword = trimmedKeyword.toLowerCase();
-      const filteredTickets = response.data.filter((ticket) => {
-        const matchesKeyword =
-          !trimmedKeyword ||
-          [
-            ticket.title,
-            ticket.description,
-            ticket.category,
-            ticket.status,
-            ticket.priority,
-          ].some((value) => value && value.toLowerCase().includes(loweredKeyword));
-
-        const matchesStatus =
-          statusFilter === "ALL" || ticket.status === statusFilter;
-
-        return matchesKeyword && matchesStatus;
-      });
-
-      setTickets(filteredTickets);
-      await loadReplies(filteredTickets);
+      setAllTickets(sortTicketsByNewest(response.data));
     } catch (err) {
       console.error("Failed to load tickets", err.response?.data || err);
       console.error(err);
@@ -159,10 +165,19 @@ function TicketPage({ role = "student" }) {
 
     const intervalId = setInterval(() => {
       loadTickets();
-    }, 5000);
+    }, 60000);
 
     return () => clearInterval(intervalId);
-  }, [role, searchKeyword, statusFilter]);
+  }, [role]);
+
+  useEffect(() => {
+    const filteredTickets = sortTicketsByNewest(
+      allTickets.filter((ticket) => matchesCurrentFilters(ticket))
+    );
+
+    setTickets(filteredTickets);
+    loadReplies(filteredTickets);
+  }, [allTickets, searchKeyword, statusFilter]);
 
   const formatCreatedAt = (createdAt) => {
     if (!createdAt) {
@@ -362,21 +377,25 @@ function TicketPage({ role = "student" }) {
       if (editingTicket) {
         await updateTicket(editingTicket.id, payload);
         setSuccessMessage("Ticket updated successfully.");
+        closeForm();
+        await loadTickets();
       } else {
-        const multipartPayload = new FormData();
-        Object.entries(payload).forEach(([key, value]) => {
-          multipartPayload.append(key, value ?? "");
-        });
-        images.forEach((image) => {
-          multipartPayload.append("images", image);
-        });
-
-        await createTicket(multipartPayload);
+        // Image upload preview only for now; backend file upload can be added later.
+        const response = await createTicket(payload);
+        const newTicket = response.data;
+        setAllTickets((currentTickets) =>
+          sortTicketsByNewest([
+            newTicket,
+            ...currentTickets.filter((ticket) => ticket.id !== newTicket.id),
+          ])
+        );
+        setRepliesByTicket((currentReplies) => ({
+          ...currentReplies,
+          [newTicket.id]: [],
+        }));
         setSuccessMessage("Ticket created successfully.");
+        closeForm();
       }
-
-      closeForm();
-      await loadTickets();
     } catch (err) {
       console.error("Create ticket failed", err.response?.data || err);
       console.error(err);
@@ -414,7 +433,7 @@ function TicketPage({ role = "student" }) {
   };
 
   const updateLocalTicketStatus = (ticketId, status) => {
-    setTickets((currentTickets) =>
+    setAllTickets((currentTickets) =>
       currentTickets.map((ticket) =>
         ticket.id === ticketId ? { ...ticket, status } : ticket
       )

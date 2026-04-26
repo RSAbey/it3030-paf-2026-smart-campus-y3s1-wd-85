@@ -13,14 +13,6 @@ export const searchTickets = (keyword) => {
 };
 
 export const createTicket = (ticket) => {
-  if (ticket instanceof FormData) {
-    return api.post("/tickets", ticket, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-  }
-
   return api.post("/tickets", ticket);
 };
 

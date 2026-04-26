@@ -2,6 +2,7 @@ package com.it3030.smartcampus.backend.controller;
 
 import com.it3030.smartcampus.backend.entity.Ticket;
 import com.it3030.smartcampus.backend.service.TicketService;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -29,15 +31,50 @@ public class TicketController {
         this.ticketService = ticketService;
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Ticket> createTicket(@RequestBody Ticket ticket) {
         Ticket savedTicket = ticketService.createTicket(ticket);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedTicket);
+    }
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Ticket> createTicketWithImages(
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam String category,
+            @RequestParam String priority,
+            @RequestParam String location,
+            @RequestParam String preferredContact,
+            @RequestParam Long userId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String assignedTechnician,
+            @RequestParam(required = false) String resolutionNotes,
+            @RequestParam(required = false) List<MultipartFile> images
+    ) {
+        Ticket ticket = new Ticket();
+        ticket.setTitle(title);
+        ticket.setDescription(description);
+        ticket.setCategory(category);
+        ticket.setPriority(priority);
+        ticket.setLocation(location);
+        ticket.setPreferredContact(preferredContact);
+        ticket.setUserId(userId);
+        ticket.setStatus(status);
+        ticket.setAssignedTechnician(assignedTechnician);
+        ticket.setResolutionNotes(resolutionNotes);
+
+        Ticket savedTicket = ticketService.createTicket(ticket, images);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedTicket);
     }
 
     @GetMapping
     public ResponseEntity<List<Ticket>> getAllTickets() {
         return ResponseEntity.ok(ticketService.getAllTickets());
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Ticket>> getTicketsByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(ticketService.getTicketsByUserId(userId));
     }
 
     @GetMapping("/recent")

@@ -20,6 +20,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     List<Ticket> findByStatus(String status);
 
+    List<Ticket> findByUserId(Long userId);
+
     List<Ticket> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String title, String description);
 
     List<Ticket> findTop10ByOrderByIdDesc();
