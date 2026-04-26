@@ -8,7 +8,19 @@ export const getTicketsByUserId = (userId) => {
   return api.get(`/tickets/user/${userId}`);
 };
 
+export const searchTickets = (keyword) => {
+  return api.get(`/tickets/search?keyword=${encodeURIComponent(keyword)}`);
+};
+
 export const createTicket = (ticket) => {
+  if (ticket instanceof FormData) {
+    return api.post("/tickets", ticket, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  }
+
   return api.post("/tickets", ticket);
 };
 
@@ -22,4 +34,20 @@ export const updateTicket = (id, ticket) => {
 
 export const deleteTicket = (id) => {
   return api.delete(`/tickets/${id}`);
+};
+
+export const addTicketReply = (id, message) => {
+  return api.post(`/tickets/${id}/replies`, { message });
+};
+
+export const getTicketReplies = (id) => {
+  return api.get(`/tickets/${id}/replies`);
+};
+
+export const updateTicketReply = (replyId, message) => {
+  return api.put(`/tickets/replies/${replyId}`, { message });
+};
+
+export const deleteTicketReply = (replyId) => {
+  return api.delete(`/tickets/replies/${replyId}`);
 };
