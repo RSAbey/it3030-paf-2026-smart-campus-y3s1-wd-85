@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tickets")
@@ -46,6 +47,17 @@ public class TicketController {
     @PutMapping("/{id}")
     public ResponseEntity<Ticket> updateTicket(@PathVariable Long id, @RequestBody Ticket ticket) {
         return ResponseEntity.ok(ticketService.updateTicket(id, ticket));
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Ticket> updateTicketStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(ticketService.updateTicketStatus(id, body.get("status")));
+    }
+
+    @PutMapping("/{id}/assign")
+    public ResponseEntity<Ticket> assignTechnician(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        String assignedTechnician = request.get("assignedTechnician");
+        return ResponseEntity.ok(ticketService.assignTechnician(id, assignedTechnician));
     }
 
     @DeleteMapping("/{id}")

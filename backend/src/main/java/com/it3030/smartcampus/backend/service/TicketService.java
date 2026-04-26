@@ -5,6 +5,7 @@ import com.it3030.smartcampus.backend.repository.TicketRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -60,5 +61,37 @@ public class TicketService {
         }
 
         ticketRepository.deleteById(id);
+    }
+
+    public Ticket updateTicketStatus(Long id, String status) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + id));
+
+        List<String> allowedStatuses = Arrays.asList(
+                "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED", "REJECTED"
+        );
+
+        if (!allowedStatuses.contains(status)) {
+            throw new RuntimeException("Invalid ticket status: " + status);
+        }
+
+        ticket.setStatus(status);
+        ticket.setUpdatedAt(LocalDateTime.now());
+
+        return ticketRepository.save(ticket);
+    }
+
+    public Ticket assignTechnician(Long id, String assignedTechnician) {
+        if (assignedTechnician == null || assignedTechnician.isBlank()) {
+            throw new RuntimeException("Technician name is required");
+        }
+
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + id));
+
+        ticket.setAssignedTechnician(assignedTechnician);
+        ticket.setUpdatedAt(LocalDateTime.now());
+
+        return ticketRepository.save(ticket);
     }
 }
