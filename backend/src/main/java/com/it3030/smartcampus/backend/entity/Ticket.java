@@ -26,6 +26,8 @@ public class Ticket {
 
     private String location;
 
+    private Long userId;
+
     private String preferredContact;
 
     private String assignedTechnician;
