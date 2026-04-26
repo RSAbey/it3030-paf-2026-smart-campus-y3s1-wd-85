@@ -7,3 +7,7 @@ export const getAllTickets = () => {
 export const createTicket = (ticket) => {
   return api.post("/tickets", ticket);
 };
+
+export const updateTicketStatus = (id, status) => {
+  return api.put(`/tickets/${id}/status`, { status });
+};

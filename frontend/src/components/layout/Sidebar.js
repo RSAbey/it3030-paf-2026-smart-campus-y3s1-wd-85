@@ -16,7 +16,7 @@ function Sidebar({ role = "admin" }) {
     { name: "Dashboard", path: "/admin/dashboard", icon: <LayoutDashboard size={18} /> },
     { name: "Resources", path: "/admin/resources", icon: <Box size={18} /> },
     { name: "Bookings", path: "/admin/bookings", icon: <Calendar size={18} /> },
-    { name: "Tickets", path: "/admin/tickets", icon: <Ticket size={18} /> },
+    { name: "Tickets", path: "/tickets", icon: <Ticket size={18} /> },
     { name: "Notifications", path: "/admin/notifications", icon: <Bell size={18} /> },
     { name: "Settings", path: "/admin/settings", icon: <Settings size={18} /> },
   ];

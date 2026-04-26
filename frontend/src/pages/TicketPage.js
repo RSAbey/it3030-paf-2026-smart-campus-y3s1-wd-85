@@ -1,13 +1,27 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../components/layout/AdminLayout";
-import { createTicket, getAllTickets } from "../services/ticketService";
+import {
+  createTicket,
+  getAllTickets,
+  updateTicketStatus,
+} from "../services/ticketService";
+
+const STATUS_OPTIONS = [
+  "OPEN",
+  "IN_PROGRESS",
+  "RESOLVED",
+  "CLOSED",
+  "REJECTED",
+];
 
 function TicketPage() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [updatingTicketId, setUpdatingTicketId] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -72,6 +86,7 @@ function TicketPage() {
     try {
       setSubmitting(true);
       setError("");
+      setSuccessMessage("");
 
       await createTicket({
         ...formData,
@@ -82,11 +97,27 @@ function TicketPage() {
 
       resetForm();
       setShowForm(false);
+      setSuccessMessage("Ticket created successfully.");
       await loadTickets();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to create ticket.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleStatusChange = async (ticketId, status) => {
+    try {
+      setUpdatingTicketId(ticketId);
+      setError("");
+      setSuccessMessage("");
+      await updateTicketStatus(ticketId, status);
+      setSuccessMessage("Ticket status updated successfully.");
+      await loadTickets();
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to update ticket status.");
+    } finally {
+      setUpdatingTicketId(null);
     }
   };
 
@@ -173,6 +204,12 @@ function TicketPage() {
       )}
 
       <div className="bg-white p-5 rounded-xl shadow">
+        {!loading && !error && successMessage && (
+          <div className="bg-green-50 text-green-600 px-4 py-3 rounded-lg text-sm mb-4">
+            {successMessage}
+          </div>
+        )}
+
         {loading && <p className="text-sm text-gray-500">Loading tickets...</p>}
 
         {!loading && error && (
@@ -198,6 +235,7 @@ function TicketPage() {
                   <th className="py-3 pr-4">Created</th>
                   <th className="py-3 pr-4">Location</th>
                   <th className="py-3 pr-4">Assigned</th>
+                  <th className="py-3 pr-4">Update Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -223,6 +261,22 @@ function TicketPage() {
                     <td className="py-3 pr-4 text-gray-600">{ticket.location || "-"}</td>
                     <td className="py-3 pr-4 text-gray-600">
                       {ticket.assignedTechnician || "Unassigned"}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <select
+                        value={ticket.status || "OPEN"}
+                        onChange={(event) =>
+                          handleStatusChange(ticket.id, event.target.value)
+                        }
+                        disabled={updatingTicketId === ticket.id}
+                        className="border rounded-lg px-3 py-2 text-xs text-gray-700 bg-white"
+                      >
+                        {STATUS_OPTIONS.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                   </tr>
                 ))}
