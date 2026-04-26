@@ -10,6 +10,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
+    long countByPriority(String priority);
+
+    long countByStatus(String status);
+
     long countByUserId(Long userId);
 
     List<Ticket> findByPriority(String priority);

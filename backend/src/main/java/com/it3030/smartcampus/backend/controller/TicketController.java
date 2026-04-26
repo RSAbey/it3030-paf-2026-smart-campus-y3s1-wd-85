@@ -39,6 +39,11 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
 
+    @GetMapping("/summary")
+    public ResponseEntity<Map<String, Long>> getTicketSummary() {
+        return ResponseEntity.ok(ticketService.getTicketSummary());
+    }
+
     @GetMapping("/status/{status}")
     public ResponseEntity<List<Ticket>> getTicketsByStatus(@PathVariable String status) {
         return ResponseEntity.ok(ticketService.getTicketsByStatus(status));

@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class TicketService {
@@ -31,6 +32,19 @@ public class TicketService {
 
     public List<Ticket> getAllTickets() {
         return ticketRepository.findAll();
+    }
+
+    public Map<String, Long> getTicketSummary() {
+        return Map.of(
+                "totalTickets", ticketRepository.count(),
+                "openTickets", ticketRepository.countByStatus("OPEN"),
+                "inProgressTickets", ticketRepository.countByStatus("IN_PROGRESS"),
+                "resolvedTickets", ticketRepository.countByStatus("RESOLVED"),
+                "closedTickets", ticketRepository.countByStatus("CLOSED"),
+                "rejectedTickets", ticketRepository.countByStatus("REJECTED"),
+                "highPriorityTickets", ticketRepository.countByPriority("HIGH"),
+                "criticalPriorityTickets", ticketRepository.countByPriority("CRITICAL")
+        );
     }
 
     public List<Ticket> getTicketsByStatus(String status) {
