@@ -1,42 +1,24 @@
-import { useState } from "react";
-import { checkConflict, createBooking, updateBooking } from "../../services/bookingService";
+import { useEffect, useState } from "react";
+import {
+  checkConflict,
+  createBooking,
+  getResources,
+  updateBooking,
+} from "../../services/bookingService";
 
-const resourceOptions = [
-  "Lab A-101",
-  "Auditorium",
-  "Meeting Room B-204",
-  "Computer Lab C-12",
-];
-
-const resourceMap = {
-  "Lab A-101": 1,
-  Auditorium: 2,
-  "Meeting Room B-204": 3,
-  "Computer Lab C-12": 4,
-};
-
-const resourceNamesById = {
-  1: "Lab A-101",
-  2: "Auditorium",
-  3: "Meeting Room B-204",
-  4: "Computer Lab C-12",
-};
-
-function getInitialResourceName(booking) {
-  if (booking?.resourceName) {
-    return booking.resourceName;
+function getInitialResourceId(booking) {
+  if (booking?.resourceId !== undefined && booking?.resourceId !== null) {
+    return String(booking.resourceId);
   }
 
-  if (booking?.resourceId && resourceNamesById[booking.resourceId]) {
-    return resourceNamesById[booking.resourceId];
-  }
-
-  return resourceOptions[0];
+  return "";
 }
 
 function BookingForm({ close, refresh = async () => {}, booking }) {
+  const [resources, setResources] = useState([]);
+  const [loadingResources, setLoadingResources] = useState(true);
   const [formData, setFormData] = useState({
-    resourceName: getInitialResourceName(booking),
+    resourceId: getInitialResourceId(booking),
     date: booking?.date || "",
     startTime: booking?.startTime || "",
     endTime: booking?.endTime || "",
@@ -46,8 +28,37 @@ function BookingForm({ close, refresh = async () => {}, booking }) {
   const [conflict, setConflict] = useState(null);
   const [checking, setChecking] = useState(false);
 
+  useEffect(() => {
+    const loadResources = async () => {
+      try {
+        const data = await getResources();
+        setResources(data);
+
+        if (!booking?.resourceId && booking?.resourceName) {
+          const matchedResource = data.find(
+            (resource) => resource.name === booking.resourceName
+          );
+
+          if (matchedResource) {
+            setFormData((currentData) => ({
+              ...currentData,
+              resourceId: String(matchedResource.id),
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("Error loading resources:", err);
+        setResources([]);
+      } finally {
+        setLoadingResources(false);
+      }
+    };
+
+    loadResources();
+  }, [booking]);
+
   const handleConflictCheck = async (data) => {
-    if (!data.date || !data.startTime || !data.endTime) {
+    if (!data.resourceId || !data.date || !data.startTime || !data.endTime) {
       setConflict(null);
       return;
     }
@@ -56,7 +67,7 @@ function BookingForm({ close, refresh = async () => {}, booking }) {
       setChecking(true);
 
       const payload = {
-        resourceId: resourceMap[data.resourceName],
+        resourceId: Number(data.resourceId),
         date: data.date,
         startTime: data.startTime,
         endTime: data.endTime,
@@ -91,7 +102,7 @@ function BookingForm({ close, refresh = async () => {}, booking }) {
     event.preventDefault();
 
     if (
-      !formData.resourceName ||
+      !formData.resourceId ||
       !formData.date ||
       !formData.startTime ||
       !formData.endTime
@@ -115,7 +126,7 @@ function BookingForm({ close, refresh = async () => {}, booking }) {
     try {
       const payload = {
         userId: booking?.userId || 1,
-        resourceId: resourceMap[formData.resourceName],
+        resourceId: Number(formData.resourceId),
         date: formData.date,
         startTime: formData.startTime,
         endTime: formData.endTime,
@@ -130,7 +141,7 @@ function BookingForm({ close, refresh = async () => {}, booking }) {
       await refresh();
       close();
     } catch (err) {
-      setError(err.response?.data || "Booking failed!");
+      setError(err.response?.data?.message || err.response?.data || "Booking failed!");
     }
   };
 
@@ -143,22 +154,31 @@ function BookingForm({ close, refresh = async () => {}, booking }) {
       )}
 
       <div>
-        <label htmlFor="resourceName" className="text-sm font-medium text-gray-700">
+        <label htmlFor="resourceId" className="text-sm font-medium text-gray-700">
           Resource
         </label>
         <select
-          id="resourceName"
-          name="resourceName"
-          value={formData.resourceName}
+          id="resourceId"
+          name="resourceId"
+          value={formData.resourceId}
           onChange={handleChange}
+          disabled={loadingResources || resources.length === 0}
           className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         >
-          {resourceOptions.map((resource) => (
-            <option key={resource} value={resource}>
-              {resource}
+          <option value="">
+            {loadingResources ? "Loading resources..." : "Select a resource"}
+          </option>
+          {resources.map((resource) => (
+            <option key={resource.id} value={resource.id}>
+              {resource.name}
             </option>
           ))}
         </select>
+        {!loadingResources && resources.length === 0 && (
+          <p className="mt-2 text-sm text-red-600">
+            No resources available right now.
+          </p>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -249,7 +269,8 @@ function BookingForm({ close, refresh = async () => {}, booking }) {
         </button>
         <button
           type="submit"
-          className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+          disabled={loadingResources || resources.length === 0 || !formData.resourceId}
+          className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Submit Booking
         </button>

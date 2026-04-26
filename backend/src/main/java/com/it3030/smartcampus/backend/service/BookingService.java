@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +16,13 @@ import com.it3030.smartcampus.backend.repository.BookingRepository;
 
 @Service
 public class BookingService {
+    private static final Logger logger = LoggerFactory.getLogger(BookingService.class);
+    private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_APPROVED = "APPROVED";
+    private static final String STATUS_REJECTED = "REJECTED";
+    private static final String STATUS_CANCELLED = "CANCELLED";
+    private static final String NOT_FOUND_MESSAGE = "Booking not found";
+    private static final String PENDING_ONLY_MESSAGE = "Only pending bookings can be modified";
 
     @Autowired
     private BookingRepository bookingRepo;
@@ -30,7 +39,8 @@ public class BookingService {
             throw new RuntimeException("Time slot already booked!");
         }
 
-        booking.setStatus("PENDING");
+        booking.setStatus(STATUS_PENDING);
+        booking.setReason(null);
         return bookingRepo.save(booking);
     }
 
@@ -43,36 +53,39 @@ public class BookingService {
     }
 
     public Booking cancelBooking(Long id) {
-        Booking booking = bookingRepo.findById(id)
-            .orElseThrow(() -> new RuntimeException("Booking not found"));
+        logger.info("Cancel booking requested for id={}", id);
+        Booking booking = getPendingBookingOrThrow(id);
 
-        if (!"PENDING".equals(booking.getStatus())) {
-            throw new RuntimeException("Only pending bookings can be cancelled");
-        }
+        booking.setStatus(STATUS_CANCELLED);
+        booking.setReason(null);
 
-        booking.setStatus("CANCELLED");
-        return bookingRepo.save(booking);
+        Booking savedBooking = bookingRepo.save(booking);
+        logger.info("Booking cancelled successfully for id={}", id);
+        return savedBooking;
     }
 
     public Booking updateBooking(Long id, Booking updatedBooking) {
-        Booking booking = bookingRepo.findById(id)
-            .orElseThrow(() -> new RuntimeException("Booking not found"));
-
-        if (!"PENDING".equals(booking.getStatus())) {
-            throw new RuntimeException("Only pending bookings can be edited");
-        }
+        logger.info("Update booking requested for id={}", id);
+        Booking booking = getPendingBookingOrThrow(id);
+        Long targetResourceId = updatedBooking.getResourceId() != null
+            ? updatedBooking.getResourceId()
+            : booking.getResourceId();
 
         List<Booking> conflicts = bookingRepo.findConflicts(
-            booking.getResourceId(),
+            targetResourceId,
             updatedBooking.getDate(),
             updatedBooking.getStartTime(),
             updatedBooking.getEndTime()
         );
 
-        if (!conflicts.isEmpty()) {
+        boolean hasConflictWithAnotherBooking = conflicts.stream()
+            .anyMatch(conflict -> !conflict.getId().equals(id));
+
+        if (hasConflictWithAnotherBooking) {
             throw new RuntimeException("Time slot already booked!");
         }
 
+        booking.setResourceId(targetResourceId);
         booking.setDate(updatedBooking.getDate());
         booking.setStartTime(updatedBooking.getStartTime());
         booking.setEndTime(updatedBooking.getEndTime());
@@ -80,9 +93,29 @@ public class BookingService {
         return bookingRepo.save(booking);
     }
 
+    public Booking approveBooking(Long id) {
+        logger.info("Approve booking requested for id={}", id);
+        Booking booking = getPendingBookingOrThrow(id);
+
+        booking.setStatus(STATUS_APPROVED);
+        booking.setReason(null);
+
+        return bookingRepo.save(booking);
+    }
+
+    public Booking rejectBooking(Long id, String reason) {
+        logger.info("Reject booking requested for id={}", id);
+        Booking booking = getPendingBookingOrThrow(id);
+
+        booking.setStatus(STATUS_REJECTED);
+        booking.setReason(reason);
+
+        return bookingRepo.save(booking);
+    }
+
     public void deleteBooking(Long id) {
         if (!bookingRepo.existsById(id)) {
-            throw new RuntimeException("Booking not found");
+            throw new RuntimeException(NOT_FOUND_MESSAGE);
         }
 
         bookingRepo.deleteById(id);
@@ -110,5 +143,25 @@ public class BookingService {
             booking.getStartTime(),
             booking.getEndTime()
         );
+    }
+
+    private Booking getBookingOrThrow(Long id) {
+        return bookingRepo.findById(id)
+            .orElseThrow(() -> {
+                logger.warn("Booking not found for id={}", id);
+                return new RuntimeException(NOT_FOUND_MESSAGE);
+            });
+    }
+
+    private Booking getPendingBookingOrThrow(Long id) {
+        Booking booking = getBookingOrThrow(id);
+        logger.info("Current booking status for id={} is {}", id, booking.getStatus());
+
+        if (!STATUS_PENDING.equals(booking.getStatus())) {
+            logger.warn("Booking id={} cannot be modified because status is {}", id, booking.getStatus());
+            throw new RuntimeException(PENDING_ONLY_MESSAGE);
+        }
+
+        return booking;
     }
 }

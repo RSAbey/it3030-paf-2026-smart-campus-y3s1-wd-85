@@ -1,6 +1,8 @@
 import BookingForm from "./BookingForm";
 
 function BookingModal({ close, refresh, booking }) {
+  const mode = booking ? "edit" : "create";
+
   return (
     <div className="fixed inset-0 flex items-center justify-center">
       <div
@@ -10,10 +12,15 @@ function BookingModal({ close, refresh, booking }) {
 
       <div className="bg-white p-6 rounded-xl z-50 w-[400px]">
         <h2 className="text-lg font-semibold mb-4">
-          {booking ? "Edit Booking" : "Book Resource"}
+          {mode === "edit" ? "Edit Booking" : "Book Resource"}
         </h2>
 
-        <BookingForm close={close} refresh={refresh} booking={booking} />
+        <BookingForm
+          key={booking?.id ?? "create"}
+          close={close}
+          refresh={refresh}
+          booking={booking}
+        />
       </div>
     </div>
   );

@@ -1,5 +1,10 @@
 import axios from "./api";
 
+export const getResources = async () => {
+  const res = await axios.get("/resources");
+  return res.data;
+};
+
 export const createBooking = async (data) => {
   const res = await axios.post("/booking", data);
   return res.data;
@@ -16,6 +21,12 @@ export const checkConflict = async (data) => {
 };
 
 export const cancelBooking = async (id) => {
+  console.log("cancelBooking service ID:", id);
+
+  if (id === undefined || id === null || typeof id === "object") {
+    throw new Error("Invalid booking ID for cancel");
+  }
+
   const res = await axios.put(`/booking/${id}/cancel`);
   return res.data;
 };

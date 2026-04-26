@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +24,7 @@ import com.it3030.smartcampus.backend.service.BookingService;
 @RequestMapping("/api/booking")
 @CrossOrigin
 public class BookingController {
+    private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
     private final BookingService service;
 
     public BookingController(BookingService service) {
@@ -39,41 +42,38 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
-        try {
-            Booking saved = service.createBooking(booking);
-            return ResponseEntity.ok(saved);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Booking> createBooking(@RequestBody Booking booking) {
+        return ResponseEntity.ok(service.createBooking(booking));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateBooking(@PathVariable Long id, @RequestBody Booking booking) {
-        try {
-            return ResponseEntity.ok(service.updateBooking(id, booking));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Booking> updateBooking(@PathVariable Long id, @RequestBody Booking booking) {
+        return ResponseEntity.ok(service.updateBooking(id, booking));
     }
 
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<?> cancelBooking(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(service.cancelBooking(id));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Booking> cancelBooking(@PathVariable Long id) {
+        logger.info("Received cancel booking request for id={}", id);
+        return ResponseEntity.ok(service.cancelBooking(id));
+    }
+
+    @PutMapping("/{id}/approve")
+    public ResponseEntity<Booking> approveBooking(@PathVariable Long id) {
+        logger.info("Received approve booking request for id={}", id);
+        return ResponseEntity.ok(service.approveBooking(id));
+    }
+
+    @PutMapping("/{id}/reject")
+    public ResponseEntity<Booking> rejectBooking(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
+        logger.info("Received reject booking request for id={}", id);
+        String reason = body != null ? body.get("reason") : null;
+        return ResponseEntity.ok(service.rejectBooking(id, reason));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteBooking(@PathVariable Long id) {
-        try {
-            service.deleteBooking(id);
-            return ResponseEntity.ok("Deleted successfully");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<String> deleteBooking(@PathVariable Long id) {
+        service.deleteBooking(id);
+        return ResponseEntity.ok("Deleted successfully");
     }
 
     @PostMapping("/check")

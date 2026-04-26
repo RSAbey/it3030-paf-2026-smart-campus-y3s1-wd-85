@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // 🔥 THIS IS THE FIX
+    private Long id;
 
     private Long userId;
     private Long resourceId;
@@ -24,6 +24,9 @@ public class Booking {
     private String startTime;
     private String endTime;
 
-    private String status; // PENDING, APPROVED, REJECTED
+    // PENDING, APPROVED, REJECTED, CANCELLED
+    private String status;
 
+    // Optional rejection/cancellation/admin note
+    private String reason;
 }

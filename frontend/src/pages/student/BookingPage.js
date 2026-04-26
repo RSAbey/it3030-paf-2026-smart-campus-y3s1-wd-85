@@ -4,6 +4,22 @@ import BookingCard from "../../components/bookings/BookingCard";
 import BookingModal from "../../components/bookings/BookingModal";
 import { cancelBooking, getBookings } from "../../services/bookingService";
 
+function normalizeBookingsResponse(response) {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  if (Array.isArray(response?.content)) {
+    return response.content;
+  }
+
+  if (Array.isArray(response?.data)) {
+    return response.data;
+  }
+
+  return [];
+}
+
 function BookingPage() {
   const userId = 1;
   const [open, setOpen] = useState(false);
@@ -13,8 +29,9 @@ function BookingPage() {
 
   const loadBookings = async () => {
     try {
-      const data = await getBookings(userId);
-      console.log("API response:", data);
+      const response = await getBookings(userId);
+      const data = normalizeBookingsResponse(response);
+      console.log(data);
       setBookings(data);
     } catch (err) {
       console.error("Error loading bookings:", err);
@@ -48,8 +65,12 @@ function BookingPage() {
 
   const handleCancelBooking = async (bookingId) => {
     try {
+      console.log("handleCancelBooking ID:", bookingId);
       await cancelBooking(bookingId);
-      await loadBookings();
+      const response = await getBookings(userId);
+      const data = normalizeBookingsResponse(response);
+      console.log(data);
+      setBookings(data);
     } catch (err) {
       console.error("Error cancelling booking:", err);
     }

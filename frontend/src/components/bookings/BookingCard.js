@@ -90,7 +90,10 @@ function BookingCard({ booking, onCancel, onEdit, onDelete, canDelete = false })
               </button>
               <button
                 type="button"
-                onClick={() => onCancel(id)}
+                onClick={() => {
+                  console.log("Cancel button booking ID:", booking.id);
+                  onCancel(booking.id);
+                }}
                 className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
               >
                 Cancel Booking
