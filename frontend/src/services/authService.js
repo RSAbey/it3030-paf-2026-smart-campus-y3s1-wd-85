@@ -35,6 +35,10 @@ export function loginAdmin(payload) {
   return api.post("/auth/login/admin", payload);
 }
 
+export function loginWithGoogle(payload) {
+  return api.post("/auth/google", payload);
+}
+
 export function getCurrentUserRole(email) {
   return api.get("/auth/role", {
     params: { email },

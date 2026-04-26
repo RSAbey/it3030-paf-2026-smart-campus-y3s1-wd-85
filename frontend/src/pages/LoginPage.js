@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { LogIn, UserPlus } from "lucide-react";
+import { LogIn, UserPlus, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   loginAdmin,
   loginStudent,
   registerStudent,
   validatePassword,
+  loginWithGoogle,
 } from "../services/authService";
 
 const ROLE_STUDENT = "student";
@@ -58,6 +59,17 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Registration form fields
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+
+  // Password visibility toggles
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Field-specific errors
+  const [fieldErrors, setFieldErrors] = useState({});
+
   const isRegistering = mode === "register";
   const isAdmin = role === ROLE_ADMIN;
 
@@ -67,12 +79,39 @@ function LoginPage() {
     }
   }, [isAdmin, isRegistering]);
 
+  // Clear field errors when mode changes
+  useEffect(() => {
+    setFieldErrors({});
+  }, [mode]);
+
   const validateForm = () => {
-    if (!email.trim()) {
-      return "Email address is required.";
+    const errors = {};
+
+    if (isRegistering) {
+      // Registration-specific validation
+      if (!firstName.trim()) {
+        errors.firstName = "First name is required.";
+      }
+      if (!lastName.trim()) {
+        errors.lastName = "Last name is required.";
+      }
     }
 
-    return validatePassword(password, isRegistering ? confirmPassword : undefined);
+    if (!email.trim()) {
+      errors.email = "Email address is required.";
+    }
+
+    const passwordError = validatePassword(password, isRegistering ? confirmPassword : undefined);
+    if (passwordError) {
+      errors.password = passwordError;
+    }
+
+    if (isRegistering && !confirmPassword) {
+      errors.confirmPassword = "Confirm password is required.";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const saveSession = (user) => {
@@ -97,9 +136,8 @@ function LoginPage() {
     event.preventDefault();
     setError("");
 
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
+    const isValid = validateForm();
+    if (!isValid) {
       return;
     }
 
@@ -107,18 +145,37 @@ function LoginPage() {
 
     try {
       let response;
-      const payload = {
-        email: email.trim(),
-        password,
-        confirmPassword: isRegistering ? confirmPassword : undefined,
-      };
 
       if (isRegistering) {
-        response = await registerStudent(payload);
+        // TODO: Backend registration endpoint integration
+        response = await registerStudent({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim(),
+          password,
+          role: "student"
+        });
+
+        // Show success message and switch to Sign In tab
+        setError("");
+        setMode("login");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        setFirstName("");
+        setLastName("");
+        setFieldErrors({});
+        alert("Registration successful! Please sign in with your credentials.");
       } else if (isAdmin) {
-        response = await loginAdmin(payload);
+        response = await loginAdmin({
+          email: email.trim(),
+          password,
+        });
       } else {
-        response = await loginStudent(payload);
+        response = await loginStudent({
+          email: email.trim(),
+          password,
+        });
       }
 
       saveSession(response.data);
@@ -131,32 +188,64 @@ function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setError("");
+
+    // Block Google login for admin tab
+    if (isAdmin) {
+      setError("Google login is only available for students.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const googleSignIn =
-        window.smartCampusAuth?.signInWithGoogle ||
-        window.authService?.signInWithGoogle;
+      // Use Google Identity Services for sign-in
+      // This will open a popup for Google authentication
+      const client = window.google?.accounts?.id;
 
-      if (typeof googleSignIn !== "function") {
+      if (!client) {
         throw new Error("Google sign in is not configured yet.");
       }
 
-      const authResult = await googleSignIn();
-      const googleRole = (authResult?.role || authResult?.user?.role || ROLE_STUDENT).toLowerCase();
+      // Initialize the Google Sign-In callback
+      window.googleCallback = async (response) => {
+        try {
+          // Decode the JWT token to get user info
+          const payload = JSON.parse(atob(response.credential.split('.')[1]));
 
-      if (isAdmin && googleRole !== ROLE_ADMIN) {
-        throw new Error("You are not authorized as admin.");
-      }
+          const googleUser = {
+            name: payload.name,
+            email: payload.email,
+            provider: "google"
+          };
 
-      saveSession({
-        id: authResult?.id || authResult?.user?.id,
-        email: authResult?.email || authResult?.user?.email || email.trim(),
-        role: isAdmin ? ROLE_ADMIN : ROLE_STUDENT,
+          // Call backend API with Google user data
+          const apiResponse = await loginWithGoogle(googleUser);
+
+          saveSession({
+            email: apiResponse.data.email,
+            name: apiResponse.data.name,
+            role: ROLE_STUDENT
+          });
+        } catch (err) {
+          setError(getErrorMessage(err, "Unable to continue with Google."));
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      // Render the Google sign-in button in a popup
+      client.initialize({
+        client_id: "YOUR_GOOGLE_CLIENT_ID",
+        callback: window.googleCallback,
+        auto_select: false,
+        cancel_on_tap_outside: false
       });
+
+      // Prompt for Google sign-in
+      client.prompt();
+
     } catch (err) {
       setError(getErrorMessage(err, "Unable to continue with Google."));
-    } finally {
       setLoading(false);
     }
   };
@@ -185,18 +274,16 @@ function LoginPage() {
           <button
             type="button"
             onClick={() => updateRole(ROLE_STUDENT)}
-            className={`rounded-md px-3 py-2 transition ${
-              !isAdmin ? "bg-white text-blue-600 shadow-sm" : "text-gray-500"
-            }`}
+            className={`rounded-md px-3 py-2 transition ${!isAdmin ? "bg-white text-blue-600 shadow-sm" : "text-gray-500"
+              }`}
           >
             Student
           </button>
           <button
             type="button"
             onClick={() => updateRole(ROLE_ADMIN)}
-            className={`rounded-md px-3 py-2 transition ${
-              isAdmin ? "bg-white text-blue-600 shadow-sm" : "text-gray-500"
-            }`}
+            className={`rounded-md px-3 py-2 transition ${isAdmin ? "bg-white text-blue-600 shadow-sm" : "text-gray-500"
+              }`}
           >
             Admin
           </button>
@@ -206,11 +293,10 @@ function LoginPage() {
           <button
             type="button"
             onClick={() => setMode("login")}
-            className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
-              !isRegistering
-                ? "border-blue-600 text-blue-600"
-                : "border-gray-200 text-gray-500"
-            }`}
+            className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${!isRegistering
+              ? "border-blue-600 text-blue-600"
+              : "border-gray-200 text-gray-500"
+              }`}
           >
             Sign in
           </button>
@@ -218,20 +304,60 @@ function LoginPage() {
             type="button"
             disabled={isAdmin}
             onClick={() => setMode("register")}
-            className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
-              isRegistering
-                ? "border-blue-600 text-blue-600"
-                : "border-gray-200 text-gray-500"
-            } disabled:cursor-not-allowed disabled:border-gray-100 disabled:text-gray-300`}
+            className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${isRegistering
+              ? "border-blue-600 text-blue-600"
+              : "border-gray-200 text-gray-500"
+              } disabled:cursor-not-allowed disabled:border-gray-100 disabled:text-gray-300`}
           >
             Register
           </button>
         </div>
 
         <form onSubmit={handleEmailSubmit} className="space-y-5">
+          {isRegistering && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="firstName" className="mb-2 block text-sm font-semibold text-gray-800">
+                    First Name
+                  </label>
+                  <input
+                    id="firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    placeholder="First name"
+                    autoComplete="given-name"
+                    className="h-[52px] w-full rounded-lg border border-gray-200 px-4 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  {fieldErrors.firstName && (
+                    <p className="mt-1 text-sm text-red-600">{fieldErrors.firstName}</p>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor="lastName" className="mb-2 block text-sm font-semibold text-gray-800">
+                    Last Name
+                  </label>
+                  <input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    placeholder="Last name"
+                    autoComplete="family-name"
+                    className="h-[52px] w-full rounded-lg border border-gray-200 px-4 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  {fieldErrors.lastName && (
+                    <p className="mt-1 text-sm text-red-600">{fieldErrors.lastName}</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
           <div>
             <label htmlFor="email" className="mb-2 block text-sm font-semibold text-gray-800">
-              Email Address
+              {isRegistering ? "Student Email" : "Email Address"}
             </label>
             <input
               id="email"
@@ -242,21 +368,36 @@ function LoginPage() {
               autoComplete="email"
               className="h-[52px] w-full rounded-lg border border-gray-200 px-4 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
+            {fieldErrors.email && (
+              <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+            )}
           </div>
 
           <div>
             <label htmlFor="password" className="mb-2 block text-sm font-semibold text-gray-800">
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="********"
-              autoComplete={isRegistering ? "new-password" : "current-password"}
-              className="h-[52px] w-full rounded-lg border border-gray-200 px-4 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="********"
+                autoComplete={isRegistering ? "new-password" : "current-password"}
+                className="h-[52px] w-full rounded-lg border border-gray-200 px-4 pr-12 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            {fieldErrors.password && (
+              <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
+            )}
           </div>
 
           {isRegistering && (
@@ -267,15 +408,27 @@ function LoginPage() {
               >
                 Confirm Password
               </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                placeholder="********"
-                autoComplete="new-password"
-                className="h-[52px] w-full rounded-lg border border-gray-200 px-4 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  placeholder="********"
+                  autoComplete="new-password"
+                  className="h-[52px] w-full rounded-lg border border-gray-200 px-4 pr-12 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+              {fieldErrors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.confirmPassword}</p>
+              )}
             </div>
           )}
 
@@ -306,7 +459,7 @@ function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || Object.keys(fieldErrors).length > 0}
             className="flex h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-base font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
           >
             {isRegistering ? <UserPlus size={20} /> : <LogIn size={20} />}

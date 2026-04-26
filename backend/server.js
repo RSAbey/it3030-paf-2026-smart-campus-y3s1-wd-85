@@ -55,6 +55,80 @@ app.post('/api/auth/login/student', (req, res) => {
     });
 });
 
+// POST /api/auth/register/student
+app.post('/api/auth/register/student', (req, res) => {
+    console.log('Student registration request received:', {
+        body: req.body,
+        timestamp: new Date().toISOString()
+    });
+
+    const { firstName, lastName, email, password, role } = req.body;
+
+    // Validate required fields
+    if (!firstName || !lastName || !email || !password) {
+        console.log('Registration failed: Missing required fields');
+        return res.status(400).json({
+            success: false,
+            message: 'All fields are required'
+        });
+    }
+
+    // Validate password length (8-10 characters)
+    if (password.length < 8 || password.length > 10) {
+        console.log('Registration failed: Invalid password length');
+        return res.status(400).json({
+            success: false,
+            message: 'Password must be 8 to 10 characters long'
+        });
+    }
+
+    // TODO: Replace with real database/Firebase registration
+    // Store user in mock database
+    console.log('Registration successful for:', email);
+    return res.json({
+        success: true,
+        message: 'Registration successful',
+        role: 'student',
+        user: {
+            firstName,
+            lastName,
+            email,
+            role: 'student'
+        }
+    });
+});
+
+// POST /api/auth/google
+app.post('/api/auth/google', (req, res) => {
+    console.log('Google authentication request received:', {
+        body: req.body,
+        timestamp: new Date().toISOString()
+    });
+
+    const { name, email, provider } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !provider) {
+        console.log('Google auth failed: Missing required fields');
+        return res.status(400).json({
+            success: false,
+            message: 'Name, email, and provider are required'
+        });
+    }
+
+    // TODO: Replace with Firebase/Google OAuth token verification
+    // In production, verify the Google ID token here using Firebase Admin SDK
+    // or Google OAuth2 API to ensure the token is valid and not tampered
+
+    console.log('Google authentication successful for:', email);
+    return res.json({
+        success: true,
+        role: 'student',
+        name: name,
+        email: email
+    });
+});
+
 // GET /api/auth/role
 app.get('/api/auth/role', (req, res) => {
     console.log('Role lookup request received:', {
