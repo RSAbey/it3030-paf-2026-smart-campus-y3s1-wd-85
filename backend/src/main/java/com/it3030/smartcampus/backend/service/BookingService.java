@@ -3,6 +3,9 @@ package com.it3030.smartcampus.backend.service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,8 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import com.it3030.smartcampus.backend.dto.BookingResponseDTO;
 import com.it3030.smartcampus.backend.entity.Booking;
+import com.it3030.smartcampus.backend.entity.Resource;
+import com.it3030.smartcampus.backend.entity.User;
 import com.it3030.smartcampus.backend.repository.BookingRepository;
+import com.it3030.smartcampus.backend.repository.ResourceRepository;
+import com.it3030.smartcampus.backend.repository.UserRepository;
 
 @Service
 public class BookingService {
@@ -21,11 +29,18 @@ public class BookingService {
     private static final String STATUS_APPROVED = "APPROVED";
     private static final String STATUS_REJECTED = "REJECTED";
     private static final String STATUS_CANCELLED = "CANCELLED";
+    private static final String STATUS_USED = "USED";
     private static final String NOT_FOUND_MESSAGE = "Booking not found";
     private static final String PENDING_ONLY_MESSAGE = "Only pending bookings can be modified";
 
     @Autowired
     private BookingRepository bookingRepo;
+
+    @Autowired
+    private ResourceRepository resourceRepo;
+
+    @Autowired
+    private UserRepository userRepo;
 
     public Booking createBooking(Booking booking) {
         List<Booking> conflicts = bookingRepo.findConflicts(
@@ -43,6 +58,7 @@ public class BookingService {
         booking.setStatus(STATUS_PENDING);
         booking.setReason(null);
         booking.setQrCode(null);
+        booking.setIsUsed(false);
         return bookingRepo.save(booking);
     }
 
@@ -54,12 +70,21 @@ public class BookingService {
         return bookingRepo.findByUserId(userId);
     }
 
+    public List<BookingResponseDTO> getBookingResponsesByUser(Long userId) {
+        return bookingRepo.findByUserId(userId)
+            .stream()
+            .map(this::mapToDTO)
+            .collect(Collectors.toList());
+    }
+
     public Booking cancelBooking(Long id) {
         logger.info("Cancel booking requested for id={}", id);
         Booking booking = getPendingBookingOrThrow(id);
 
         booking.setStatus(STATUS_CANCELLED);
         booking.setReason(null);
+        booking.setQrCode(null);
+        booking.setIsUsed(false);
 
         Booking savedBooking = bookingRepo.save(booking);
         logger.info("Booking cancelled successfully for id={}", id);
@@ -104,9 +129,11 @@ public class BookingService {
             throw new RuntimeException("Only pending bookings can be approved");
         }
 
+        String qr = UUID.randomUUID().toString();
         booking.setStatus(STATUS_APPROVED);
         booking.setReason(null);
-        booking.setQrCode("BOOKING-" + booking.getId());
+        booking.setQrCode(qr);
+        booking.setIsUsed(false);
 
         return bookingRepo.save(booking);
     }
@@ -123,21 +150,46 @@ public class BookingService {
         booking.setStatus(STATUS_REJECTED);
         booking.setReason(reason);
         booking.setQrCode(null);
+        booking.setIsUsed(false);
 
         return bookingRepo.save(booking);
     }
 
-    public Booking verifyBookingByQrCode(String qrCode) {
-        logger.info("QR verification requested for qrCode={}", qrCode);
+    public Booking getBookingByQrCode(String qrCode) {
+        logger.info("QR booking lookup requested for qrCode={}", qrCode);
 
-        Booking booking = bookingRepo.findByQrCode(qrCode)
+        return bookingRepo.findByQrCode(qrCode)
             .orElseThrow(() -> new RuntimeException("Invalid QR Code"));
+    }
 
-        if (!STATUS_APPROVED.equals(booking.getStatus())) {
+    public Booking verifyBookingByQrCode(String qrCode) {
+        Booking booking = getBookingByQrCode(qrCode);
+
+        if (!STATUS_APPROVED.equals(normalizeStatus(booking.getStatus()))) {
             throw new RuntimeException("Booking not approved");
         }
 
+        if (Boolean.TRUE.equals(booking.getIsUsed())) {
+            throw new RuntimeException("QR already used");
+        }
+
         return booking;
+    }
+
+    public Booking validateQrCode(String qrCode) {
+        Booking booking = getBookingByQrCode(qrCode);
+
+        if (Boolean.TRUE.equals(booking.getIsUsed())) {
+            throw new RuntimeException("QR already used");
+        }
+
+        if (!STATUS_APPROVED.equals(normalizeStatus(booking.getStatus()))) {
+            throw new RuntimeException("Booking not approved");
+        }
+
+        booking.setIsUsed(true);
+        booking.setStatus(STATUS_USED);
+        return bookingRepo.save(booking);
     }
 
     public void deleteBooking(Long id) {
@@ -170,6 +222,36 @@ public class BookingService {
             booking.getStartTime(),
             booking.getEndTime()
         );
+    }
+
+    public BookingResponseDTO mapToDTO(Booking booking) {
+        BookingResponseDTO dto = new BookingResponseDTO();
+        Optional<User> user = userRepo.findById(booking.getUserId());
+        Optional<Resource> resource = resourceRepo.findById(booking.getResourceId());
+
+        dto.setId(booking.getId());
+        dto.setUserId(booking.getUserId());
+        dto.setResourceId(booking.getResourceId());
+        dto.setUserName(
+            user.map(User::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .orElse("User #" + booking.getUserId())
+        );
+        dto.setResourceName(
+            resource.map(Resource::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .orElse("Resource #" + booking.getResourceId())
+        );
+        dto.setLocation(resource.map(Resource::getLocation).orElse("Location not available"));
+        dto.setDate(booking.getDate());
+        dto.setStartTime(booking.getStartTime());
+        dto.setEndTime(booking.getEndTime());
+        dto.setReason(booking.getReason());
+        dto.setStatus(booking.getStatus());
+        dto.setQrCode(booking.getQrCode());
+        dto.setIsUsed(booking.getIsUsed());
+
+        return dto;
     }
 
     private Booking getBookingOrThrow(Long id) {

@@ -8,11 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import com.it3030.smartcampus.backend.entity.Booking;
+
 public interface BookingRepository extends JpaRepository<Booking, Long> {
-
-    // public List<Map<String, Object>> getWeeklyBookings();
-
-    // public long count();
 
     @Query("SELECT b.date as day, COUNT(b) as total FROM Booking b GROUP BY b.date")
     List<Map<String, Object>> getWeeklyBookings();

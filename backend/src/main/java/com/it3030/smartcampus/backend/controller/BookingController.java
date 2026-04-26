@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.it3030.smartcampus.backend.dto.BookingResponseDTO;
 import com.it3030.smartcampus.backend.entity.Booking;
 import com.it3030.smartcampus.backend.service.BookingService;
 
@@ -41,10 +42,35 @@ public class BookingController {
         return service.getBookingsByUser(userId);
     }
 
+    @GetMapping("/my-bookings/{userId}")
+    public List<BookingResponseDTO> getMyBookings(@PathVariable Long userId) {
+        return service.getBookingResponsesByUser(userId);
+    }
+
     @GetMapping("/verify/{qrCode}")
     public ResponseEntity<?> verifyQR(@PathVariable String qrCode) {
         try {
             Booking booking = service.verifyBookingByQrCode(qrCode);
+            return ResponseEntity.ok(booking);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/qr/{qrCode}")
+    public ResponseEntity<?> getBookingByQR(@PathVariable String qrCode) {
+        try {
+            Booking booking = service.getBookingByQrCode(qrCode);
+            return ResponseEntity.ok(booking);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/qr/validate/{qrCode}")
+    public ResponseEntity<?> validateQR(@PathVariable String qrCode) {
+        try {
+            Booking booking = service.validateQrCode(qrCode);
             return ResponseEntity.ok(booking);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

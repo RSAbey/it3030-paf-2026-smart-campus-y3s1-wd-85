@@ -24,11 +24,13 @@ public class Booking {
     private String startTime;
     private String endTime;
 
-    // PENDING, APPROVED, REJECTED, CANCELLED
+    // PENDING, APPROVED, REJECTED, CANCELLED, USED
     private String status;
 
     // Optional rejection/cancellation/admin note
     private String reason;
 
     private String qrCode;
+
+    private Boolean isUsed = false;
 }
