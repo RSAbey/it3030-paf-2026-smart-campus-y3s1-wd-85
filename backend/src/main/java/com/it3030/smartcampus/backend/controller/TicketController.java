@@ -39,6 +39,11 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
 
+    @GetMapping("/recent")
+    public ResponseEntity<List<Ticket>> getRecentTickets() {
+        return ResponseEntity.ok(ticketService.getRecentTickets());
+    }
+
     @GetMapping("/summary")
     public ResponseEntity<Map<String, Long>> getTicketSummary() {
         return ResponseEntity.ok(ticketService.getTicketSummary());

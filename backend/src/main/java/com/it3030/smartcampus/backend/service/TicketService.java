@@ -34,6 +34,10 @@ public class TicketService {
         return ticketRepository.findAll();
     }
 
+    public List<Ticket> getRecentTickets() {
+        return ticketRepository.findTop10ByOrderByIdDesc();
+    }
+
     public Map<String, Long> getTicketSummary() {
         return Map.of(
                 "totalTickets", ticketRepository.count(),
