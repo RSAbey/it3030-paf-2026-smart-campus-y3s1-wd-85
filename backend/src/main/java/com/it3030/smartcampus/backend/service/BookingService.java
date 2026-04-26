@@ -39,8 +39,10 @@ public class BookingService {
             throw new RuntimeException("Time slot already booked!");
         }
 
+        // Always force newly created bookings into the admin approval flow.
         booking.setStatus(STATUS_PENDING);
         booking.setReason(null);
+        booking.setQrCode(null);
         return bookingRepo.save(booking);
     }
 
@@ -97,7 +99,7 @@ public class BookingService {
         logger.info("Approve booking requested for id={}", id);
         Booking booking = getBookingOrThrow(id);
 
-        if (!STATUS_PENDING.equals(booking.getStatus())) {
+        if (!STATUS_PENDING.equals(normalizeStatus(booking.getStatus()))) {
             logger.warn("Booking id={} cannot be approved because status is {}", id, booking.getStatus());
             throw new RuntimeException("Only pending bookings can be approved");
         }
@@ -113,7 +115,7 @@ public class BookingService {
         logger.info("Reject booking requested for id={}", id);
         Booking booking = getBookingOrThrow(id);
 
-        if (!STATUS_PENDING.equals(booking.getStatus())) {
+        if (!STATUS_PENDING.equals(normalizeStatus(booking.getStatus()))) {
             logger.warn("Booking id={} cannot be rejected because status is {}", id, booking.getStatus());
             throw new RuntimeException("Only pending bookings can be rejected");
         }
@@ -182,11 +184,15 @@ public class BookingService {
         Booking booking = getBookingOrThrow(id);
         logger.info("Current booking status for id={} is {}", id, booking.getStatus());
 
-        if (!STATUS_PENDING.equals(booking.getStatus())) {
+        if (!STATUS_PENDING.equals(normalizeStatus(booking.getStatus()))) {
             logger.warn("Booking id={} cannot be modified because status is {}", id, booking.getStatus());
             throw new RuntimeException(PENDING_ONLY_MESSAGE);
         }
 
         return booking;
+    }
+
+    private String normalizeStatus(String status) {
+        return status == null ? "" : status.trim().toUpperCase();
     }
 }

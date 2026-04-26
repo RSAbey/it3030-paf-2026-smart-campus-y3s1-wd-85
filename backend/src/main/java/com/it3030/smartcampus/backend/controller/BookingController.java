@@ -79,10 +79,10 @@ public class BookingController {
     }
 
     @PutMapping("/{id}/reject")
-    public ResponseEntity<?> rejectBooking(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
+    public ResponseEntity<?> rejectBooking(@PathVariable Long id, @RequestBody Map<String, String> body) {
         logger.info("Received reject booking request for id={}", id);
         try {
-            String reason = body != null ? body.get("reason") : null;
+            String reason = body.get("reason");
             Booking booking = service.rejectBooking(id, reason);
             return ResponseEntity.ok(booking);
         } catch (RuntimeException e) {

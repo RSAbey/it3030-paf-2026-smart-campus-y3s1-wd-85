@@ -38,24 +38,35 @@ const dayFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-function normalizeResponse(response) {
+function normalizeArrayResponse(response) {
   if (Array.isArray(response)) {
     return response;
-  }
-
-  if (Array.isArray(response?.content)) {
-    return response.content;
   }
 
   if (Array.isArray(response?.data)) {
     return response.data;
   }
 
+  if (Array.isArray(response?.content)) {
+    return response.content;
+  }
+
+  if (Array.isArray(response?.data?.data)) {
+    return response.data.data;
+  }
+
+  if (Array.isArray(response?.data?.content)) {
+    return response.data.content;
+  }
+
   return [];
 }
 
 function buildCalendarDays(bookings) {
-  const bookingDates = new Set(bookings.map((booking) => booking.date).filter(Boolean));
+  const safeBookings = Array.isArray(bookings) ? bookings : [];
+  const bookingDates = new Set(
+    safeBookings.map((booking) => booking?.date).filter(Boolean)
+  );
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
@@ -98,15 +109,19 @@ function AdminBookingPage() {
 
   const loadBookings = async () => {
     try {
-      const [bookingsResponse, resourcesResponse] = await Promise.all([
+      const [bookingsRes, resourcesRes] = await Promise.all([
         getAllBookings(),
         getResources(),
       ]);
 
-      setBookings(normalizeResponse(bookingsResponse));
-      setResources(normalizeResponse(resourcesResponse));
+      const normalizedBookings = normalizeArrayResponse(bookingsRes);
+      console.log(normalizedBookings);
+      setBookings(normalizedBookings);
+      setResources(normalizeArrayResponse(resourcesRes));
     } catch (err) {
       console.error(err);
+      setBookings([]);
+      setResources([]);
       setMessage("Failed to load bookings");
     } finally {
       setLoading(false);
@@ -117,52 +132,62 @@ function AdminBookingPage() {
     loadBookings();
   }, []);
 
+  const safeBookings = Array.isArray(bookings) ? bookings : [];
+  const safeResources = Array.isArray(resources) ? resources : [];
+
   const resourceNameMap = useMemo(() => {
-    return resources.reduce((map, resource) => {
+    return safeResources.reduce((map, resource) => {
       map[resource.id] = resource.name;
       return map;
     }, {});
-  }, [resources]);
+  }, [safeResources]);
 
-  const calendar = useMemo(() => buildCalendarDays(bookings), [bookings]);
+  const calendar = useMemo(() => buildCalendarDays(safeBookings), [safeBookings]);
 
-  const pendingCount = bookings.filter((booking) => booking.status === "PENDING").length;
-  const approvedCount = bookings.filter((booking) => booking.status === "APPROVED").length;
-  const rejectedCount = bookings.filter((booking) => booking.status === "REJECTED").length;
-
-  const updateBookingInState = (updatedBooking) => {
-    setBookings((currentBookings) =>
-      currentBookings.map((booking) =>
-        booking.id === updatedBooking.id ? { ...booking, ...updatedBooking } : booking
-      )
-    );
-  };
+  const pendingCount = safeBookings.filter(
+    (booking) => booking.status === "PENDING"
+  ).length;
+  const approvedCount = safeBookings.filter(
+    (booking) => booking.status === "APPROVED"
+  ).length;
+  const rejectedCount = safeBookings.filter(
+    (booking) => booking.status === "REJECTED"
+  ).length;
 
   const handleApprove = async (id) => {
     try {
       setActionId(id);
-      const updatedBooking = await approveBooking(id);
-      updateBookingInState(updatedBooking);
+      await approveBooking(id);
       setMessage("Booking Approved");
       await loadBookings();
     } catch (err) {
       console.error(err);
-      setMessage(err.response?.data?.message || err.response?.data || "Failed to approve booking");
+      setMessage(
+        err.response?.data?.message ||
+          err.response?.data ||
+          "Failed to approve booking"
+      );
     } finally {
       setActionId(null);
     }
   };
 
   const handleReject = async (id) => {
+    const reason = prompt("Enter rejection reason:");
+    if (!reason) return;
+
     try {
       setActionId(id);
-      const updatedBooking = await rejectBooking(id);
-      updateBookingInState(updatedBooking);
+      await rejectBooking(id, reason);
       setMessage("Booking Rejected");
       await loadBookings();
     } catch (err) {
       console.error(err);
-      setMessage(err.response?.data?.message || err.response?.data || "Failed to reject booking");
+      setMessage(
+        err.response?.data?.message ||
+          err.response?.data ||
+          "Failed to reject booking"
+      );
     } finally {
       setActionId(null);
     }
@@ -171,7 +196,7 @@ function AdminBookingPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Booking System</h1>
             <p className="text-sm text-gray-500">
@@ -182,13 +207,13 @@ function AdminBookingPage() {
           <div className="flex gap-3">
             <button
               onClick={() => navigate("/admin/scan")}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
               <QrCode size={18} />
               Scan QR
             </button>
 
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg">
+            <button className="rounded-lg bg-blue-600 px-4 py-2 text-white">
               + New Booking
             </button>
           </div>
@@ -197,15 +222,21 @@ function AdminBookingPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
             <p className="text-sm text-slate-500">Pending</p>
-            <p className="mt-1 text-2xl font-bold text-amber-500">{pendingCount}</p>
+            <p className="mt-1 text-2xl font-bold text-amber-500">
+              {pendingCount}
+            </p>
           </div>
           <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
             <p className="text-sm text-slate-500">Approved</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-500">{approvedCount}</p>
+            <p className="mt-1 text-2xl font-bold text-emerald-500">
+              {approvedCount}
+            </p>
           </div>
           <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
             <p className="text-sm text-slate-500">Rejected</p>
-            <p className="mt-1 text-2xl font-bold text-rose-500">{rejectedCount}</p>
+            <p className="mt-1 text-2xl font-bold text-rose-500">
+              {rejectedCount}
+            </p>
           </div>
         </div>
 
@@ -285,7 +316,9 @@ function AdminBookingPage() {
 
         <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
           <div className="border-b border-slate-100 px-6 py-5">
-            <h2 className="text-3xl font-semibold text-slate-900">All Bookings</h2>
+            <h2 className="text-3xl font-semibold text-slate-900">
+              All Bookings
+            </h2>
           </div>
 
           {loading && (
@@ -294,15 +327,16 @@ function AdminBookingPage() {
             </div>
           )}
 
-          {!loading && bookings.length === 0 && (
+          {!loading && safeBookings.length === 0 && (
             <div className="px-6 py-8 text-sm text-slate-500">
               No bookings found.
             </div>
           )}
 
-          {!loading && bookings.length > 0 && (
+          {!loading && safeBookings.length > 0 && (
             <div className="divide-y divide-slate-100">
-              {bookings.map((booking) => {
+              {safeBookings.map((booking) => {
+                const bookingStatus = booking.status?.toUpperCase?.() || "";
                 const resourceName =
                   booking.resourceName ||
                   resourceNameMap[booking.resourceId] ||
@@ -322,25 +356,28 @@ function AdminBookingPage() {
                         </h3>
                         <span
                           className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                            statusStyles[booking.status] || "bg-slate-100 text-slate-700"
+                            statusStyles[bookingStatus] ||
+                            "bg-slate-100 text-slate-700"
                           }`}
                         >
-                          {booking.status}
+                          {bookingStatus || booking.status}
                         </span>
                       </div>
 
                       <div className="mt-3 flex flex-wrap items-center gap-5 text-sm text-slate-500">
                         <div className="flex items-center gap-2">
                           <CalendarDays size={16} />
-                          {booking.date ? dayFormatter.format(new Date(`${booking.date}T00:00:00`)) : "No date"}
+                          {booking.date
+                            ? dayFormatter.format(
+                                new Date(`${booking.date}T00:00:00`)
+                              )
+                            : "No date"}
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock3 size={16} />
                           {booking.startTime} - {booking.endTime}
                         </div>
-                        <div>
-                          Booked by: User #{booking.userId}
-                        </div>
+                        <div>Booked by: User #{booking.userId}</div>
                       </div>
 
                       {booking.reason && (
@@ -351,39 +388,36 @@ function AdminBookingPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      {booking.status === "APPROVED" && (
+                      {bookingStatus === "APPROVED" && (
                         <div className="flex items-center gap-2 text-emerald-500">
                           <ShieldCheck size={24} />
                         </div>
                       )}
 
-                      {booking.status === "REJECTED" && (
+                      {bookingStatus === "REJECTED" && (
                         <div className="flex items-center gap-2 text-rose-500">
                           <XCircle size={24} />
                         </div>
                       )}
 
-                      {booking.status === "PENDING" && (
-                        <>
+                      {bookingStatus === "PENDING" && (
+                        <div className="mt-2 flex gap-2">
                           <button
-                            type="button"
-                            disabled={isActionLoading}
                             onClick={() => handleApprove(booking.id)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-green-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={isActionLoading}
+                            className="rounded bg-green-500 px-3 py-1 text-white disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            <CheckCircle2 size={16} />
                             {isActionLoading ? "Updating..." : "Approve"}
                           </button>
+
                           <button
-                            type="button"
-                            disabled={isActionLoading}
                             onClick={() => handleReject(booking.id)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={isActionLoading}
+                            className="rounded bg-red-500 px-3 py-1 text-white disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            <XCircle size={16} />
                             {isActionLoading ? "Updating..." : "Reject"}
                           </button>
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>

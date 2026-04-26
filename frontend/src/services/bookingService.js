@@ -46,8 +46,8 @@ export const approveBooking = async (id) => {
   return res.data;
 };
 
-export const rejectBooking = async (id) => {
-  const res = await axios.put(`/booking/${id}/reject`);
+export const rejectBooking = async (id, reason) => {
+  const res = await axios.put(`/booking/${id}/reject`, { reason });
   return res.data;
 };
 
