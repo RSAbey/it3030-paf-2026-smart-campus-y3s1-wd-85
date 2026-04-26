@@ -53,4 +53,12 @@ public class TicketService {
 
         return ticketRepository.save(existingTicket);
     }
+
+    public void deleteTicket(Long id) {
+        if (!ticketRepository.existsById(id)) {
+            throw new RuntimeException("Ticket not found with id: " + id);
+        }
+
+        ticketRepository.deleteById(id);
+    }
 }
