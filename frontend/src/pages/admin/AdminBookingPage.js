@@ -8,6 +8,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import BookingModal from "../../components/bookings/BookingModal";
 import AdminLayout from "../../components/layout/AdminLayout";
 import {
   approveBooking,
@@ -106,6 +107,9 @@ function AdminBookingPage() {
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState(null);
   const [message, setMessage] = useState("");
+  const [open, setOpen] = useState(false);
+
+  console.log("open state:", open);
 
   const loadBookings = async () => {
     try {
@@ -213,7 +217,10 @@ function AdminBookingPage() {
               Scan QR
             </button>
 
-            <button className="rounded-lg bg-blue-600 px-4 py-2 text-white">
+            <button
+              onClick={() => setOpen(true)}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-white"
+            >
               + New Booking
             </button>
           </div>
@@ -427,6 +434,13 @@ function AdminBookingPage() {
           )}
         </div>
       </div>
+
+      {open && (
+        <BookingModal
+          close={() => setOpen(false)}
+          refresh={loadBookings}
+        />
+      )}
     </AdminLayout>
   );
 }
