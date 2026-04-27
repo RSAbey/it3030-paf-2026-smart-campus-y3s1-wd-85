@@ -1,4 +1,5 @@
 import { Bell } from "lucide-react";
+import { Link } from "react-router-dom";
 
 function Navbar({ role = "admin" }) {
   const isStudent = role === "student";
@@ -7,7 +8,7 @@ function Navbar({ role = "admin" }) {
   const userInitials = isStudent ? "JD" : "AU";
 
   return (
-    <div className="flex h-full w-full items-center justify-between bg-white">
+    <div className="flex justify-between items-center bg-white px-6 py-3 border-b">
       
       {/* Title */}
       <div>
@@ -19,12 +20,16 @@ function Navbar({ role = "admin" }) {
       <div className="flex items-center gap-5">
         
         {/* Notification */}
-        <div className="relative">
+        <Link
+          to={isStudent ? "/student/notifications" : "/admin/notifications"}
+          className="relative"
+          aria-label="Notifications"
+        >
           <Bell className="text-gray-600" />
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 rounded-full">
             3
           </span>
-        </div>
+        </Link>
 
         {/* User */}
         <div className="flex items-center gap-2">
