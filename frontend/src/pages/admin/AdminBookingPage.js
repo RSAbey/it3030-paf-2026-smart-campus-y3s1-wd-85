@@ -17,6 +17,7 @@ import {
   getResources,
   rejectBooking,
 } from "../../services/bookingService";
+import RejectModal from "../../components/bookings/RejectModal";
 
 const statusStyles = {
   APPROVED: "bg-green-100 text-green-700",
@@ -109,6 +110,8 @@ function AdminBookingPage() {
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState(null);
 
   console.log("open state:", open);
 
@@ -177,15 +180,18 @@ function AdminBookingPage() {
     }
   };
 
-  const handleReject = async (id) => {
-    const reason = prompt("Enter rejection reason:");
-    if (!reason) return;
+  const handleReject = async (reason) => {
+    if (!selectedBookingId || !reason) {
+      return;
+    }
 
     try {
-      setActionId(id);
-      await rejectBooking(id, reason);
+      setActionId(selectedBookingId);
+      await rejectBooking(selectedBookingId, reason);
       setMessage("Booking Rejected");
       await loadBookings();
+      setShowRejectModal(false);
+      setSelectedBookingId(null);
     } catch (err) {
       console.error(err);
       setMessage(
@@ -419,7 +425,10 @@ function AdminBookingPage() {
                           </button>
 
                           <button
-                            onClick={() => handleReject(booking.id)}
+                            onClick={() => {
+                              setSelectedBookingId(booking.id);
+                              setShowRejectModal(true);
+                            }}
                             disabled={isActionLoading}
                             className="rounded bg-red-500 px-3 py-1 text-white disabled:cursor-not-allowed disabled:opacity-60"
                           >
@@ -467,6 +476,16 @@ function AdminBookingPage() {
             />
           </div>
         </div>
+      )}
+
+      {showRejectModal && (
+        <RejectModal
+          onClose={() => {
+            setShowRejectModal(false);
+            setSelectedBookingId(null);
+          }}
+          onConfirm={handleReject}
+        />
       )}
     </AdminLayout>
   );
