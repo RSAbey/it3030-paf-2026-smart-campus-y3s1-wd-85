@@ -1,4 +1,4 @@
-import html2canvas from "html2canvas";
+import { useState } from "react";
 import {
   CalendarDays,
   Clock3,
@@ -8,7 +8,6 @@ import {
   User,
   XCircle,
 } from "lucide-react";
-import QRCode from "react-qr-code";
 
 const statusStyles = {
   APPROVED: "bg-green-100 text-green-700",
@@ -31,6 +30,7 @@ function formatBookingTime(time) {
 }
 
 function BookingCard({ booking, onCancel, onEdit, onDelete, canDelete = false }) {
+  const [showQrModal, setShowQrModal] = useState(false);
   const {
     id,
     userName,
@@ -43,24 +43,7 @@ function BookingCard({ booking, onCancel, onEdit, onDelete, canDelete = false })
     qrCode,
     reason,
   } = booking;
-  const qrElementId = `qr-code-${id}`;
-
-  const downloadQr = async () => {
-    const qrElement = document.getElementById(qrElementId);
-
-    if (!qrElement) {
-      return;
-    }
-
-    const canvas = await html2canvas(qrElement, {
-      backgroundColor: "#ffffff",
-      scale: 2,
-    });
-    const link = document.createElement("a");
-    link.download = `booking-${id}-qr.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  };
+  const qrImageUrl = `http://localhost:8080/api/bookings/qr/${id}`;
 
   return (
     <div className="border bg-white p-5 rounded-xl shadow-sm">
@@ -113,7 +96,7 @@ function BookingCard({ booking, onCancel, onEdit, onDelete, canDelete = false })
 
       {status === "APPROVED" && qrCode && (
         <div className="mt-4 rounded-xl border border-green-100 bg-green-50 p-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="rounded-lg bg-white p-2 text-green-600 shadow-sm">
               <QrCode size={20} />
             </div>
@@ -123,22 +106,26 @@ function BookingCard({ booking, onCancel, onEdit, onDelete, canDelete = false })
               <p className="mt-1 text-sm text-green-700">
                 Show this QR at the resource entrance for validation.
               </p>
-              <p className="mt-1 break-all text-xs text-green-700">{qrCode}</p>
             </div>
 
-            <div className="flex flex-col items-start gap-3 sm:items-center">
-              <div id={qrElementId} className="rounded-lg bg-white p-3 shadow-sm">
-                <QRCode value={qrCode} size={120} />
-              </div>
-
+            <div className="flex flex-col items-start gap-3 sm:items-end">
               <button
                 type="button"
-                onClick={downloadQr}
+                onClick={() => setShowQrModal(true)}
+                className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-white px-3 py-2 text-sm font-medium text-green-700 transition hover:bg-green-100"
+              >
+                <QrCode size={16} />
+                View QR
+              </button>
+
+              <a
+                href={qrImageUrl}
+                download={`booking-${id}.png`}
                 className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-white px-3 py-2 text-sm font-medium text-green-700 transition hover:bg-green-100"
               >
                 <Download size={16} />
                 Download QR
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -189,6 +176,45 @@ function BookingCard({ booking, onCancel, onEdit, onDelete, canDelete = false })
               Delete
             </button>
           )}
+        </div>
+      )}
+
+      {showQrModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowQrModal(false)}
+          />
+
+          <div className="relative z-50 w-[360px] rounded-xl bg-white p-5 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-900">Booking QR</h3>
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <img
+                src={qrImageUrl}
+                alt={`Booking ${id} QR`}
+                className="h-full w-full rounded-md bg-white"
+              />
+            </div>
+
+            <a
+              href={qrImageUrl}
+              download={`booking-${id}.png`}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              <Download size={16} />
+              Download QR
+            </a>
+          </div>
         </div>
       )}
     </div>
