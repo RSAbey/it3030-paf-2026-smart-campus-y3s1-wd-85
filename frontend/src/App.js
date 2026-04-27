@@ -5,6 +5,9 @@ import ResourcePage from "./pages/ResourcePage";
 import BookingPage from "./pages/BookingPage";
 import TicketPage from "./pages/TicketPage";
 import LoginPage from "./pages/LoginPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ProfilePage from "./pages/ProfilePage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
 import StudentNotificationsPage from "./pages/student/StudentNotificationsPage";
@@ -25,6 +28,8 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/dashboard"
           element={<ProtectedRoute allowedRoles={allRoles}><DashboardRedirect /></ProtectedRoute>}
@@ -66,6 +71,10 @@ function App() {
           element={<ProtectedRoute allowedRoles={adminOnly}><AdminNotificationsPage /></ProtectedRoute>}
         />
         <Route
+          path="/admin/profile"
+          element={<ProtectedRoute allowedRoles={adminOnly}><ProfilePage role="admin" /></ProtectedRoute>}
+        />
+        <Route
           path="/student/resources"
           element={<ProtectedRoute allowedRoles={studentOnly}><ResourcePage /></ProtectedRoute>}
         />
@@ -88,6 +97,10 @@ function App() {
         <Route
           path="/student/notifications/settings"
           element={<ProtectedRoute allowedRoles={studentOnly}><NotificationSettingsPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/student/profile"
+          element={<ProtectedRoute allowedRoles={studentOnly}><ProfilePage role="student" /></ProtectedRoute>}
         />
         <Route
           path="/admin/*"

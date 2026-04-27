@@ -6,41 +6,53 @@ import {
   getStudentNotifications,
 } from "../../services/notificationService";
 
+function generateInitials(name) {
+  if (!name || typeof name !== "string") return "U";
+  const words = name.trim().split(/\s+/);
+  if (words.length >= 2) {
+    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
+function getNameFromEmail(email) {
+  if (!email) {
+    return "User";
+  }
+
+  return email
+    .split("@")[0]
+    .split(".")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 function Navbar({ role }) {
   const [userName, setUserName] = useState("User");
   const [userEmail, setUserEmail] = useState("user@email.com");
   const [avatarInitials, setAvatarInitials] = useState("U");
   const [unreadCount, setUnreadCount] = useState(0);
   const effectiveRole = (role || localStorage.getItem("role") || "").toLowerCase();
+  const profilePath = effectiveRole === "admin" ? "/admin/profile" : "/student/profile";
 
   useEffect(() => {
-    // Get user data from localStorage
-    // TODO: Replace mock user data with real backend/Firebase user data if not already connected
-    const storedEmail = localStorage.getItem("userEmail");
-    const storedUserName = localStorage.getItem("userName");
+    const loadUserSummary = () => {
+      // TODO: Replace localStorage profile data with backend/Firebase user data when available.
+      const storedEmail = localStorage.getItem("userEmail") || localStorage.getItem("authEmail") || "user@email.com";
+      const storedUserName = localStorage.getItem("userName") || getNameFromEmail(storedEmail);
 
-    // Set email
-    if (storedEmail) {
       setUserEmail(storedEmail);
-    }
-
-    // Set user name and generate initials
-    if (storedUserName) {
       setUserName(storedUserName);
       setAvatarInitials(generateInitials(storedUserName));
-    } else if (storedEmail) {
-      // Generate name from email if userName not available
-      const nameFromEmail = storedEmail.split("@")[0];
-      const formattedName = nameFromEmail
-        .split(".")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
-      setUserName(formattedName);
-      setAvatarInitials(generateInitials(formattedName));
-    } else {
-      // Use fallback
-      setAvatarInitials(generateInitials("User"));
-    }
+    };
+
+    loadUserSummary();
+    window.addEventListener("profile-updated", loadUserSummary);
+
+    return () => {
+      window.removeEventListener("profile-updated", loadUserSummary);
+    };
   }, []);
 
   useEffect(() => {
@@ -96,15 +108,6 @@ function Navbar({ role }) {
     };
   }, [effectiveRole]);
 
-  const generateInitials = (name) => {
-    if (!name || typeof name !== "string") return "U";
-    const words = name.trim().split(/\s+/);
-    if (words.length >= 2) {
-      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-
   return (
     <div className="flex justify-between items-center bg-white px-6 py-3 border-b">
 
@@ -132,7 +135,11 @@ function Navbar({ role }) {
         </Link>
 
         {/* User */}
-        <div className="flex items-center gap-2">
+        <Link
+          to={profilePath}
+          className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 transition hover:bg-gray-100"
+          aria-label="Open profile"
+        >
           <div className="text-right">
             <p className="text-sm font-medium">{userName}</p>
             <p className="text-xs text-gray-500">{userEmail}</p>
@@ -141,7 +148,7 @@ function Navbar({ role }) {
           <div className="w-9 h-9 bg-blue-500 text-white flex items-center justify-center rounded-full text-xs font-semibold">
             {avatarInitials}
           </div>
-        </div>
+        </Link>
 
       </div>
     </div>

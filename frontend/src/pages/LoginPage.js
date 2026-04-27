@@ -122,8 +122,14 @@ function LoginPage() {
 
   const saveSession = (user) => {
     const userRole = (user?.role || role).toLowerCase();
+    const sessionEmail = user?.email || email.trim();
     localStorage.setItem("role", userRole);
-    localStorage.setItem("userEmail", user?.email || email.trim());
+    localStorage.setItem("authEmail", sessionEmail);
+    localStorage.setItem("userEmail", sessionEmail);
+
+    if (user?.name) {
+      localStorage.setItem("userName", user.name);
+    }
 
     if (user?.id) {
       localStorage.setItem("userId", String(user.id));
@@ -163,7 +169,7 @@ function LoginPage() {
 
         // Show success message
         setError("");
-        
+
         // Clear all registration form fields
         setEmail("");
         setPassword("");
@@ -171,13 +177,13 @@ function LoginPage() {
         setFirstName("");
         setLastName("");
         setFieldErrors({});
-        
+
         // Show success popup and switch to Sign In tab after delay
         setTimeout(() => {
           setMode("login");
           alert("Registration successful. Please sign in.");
         }, 500);
-        
+
         return;
       } else if (isAdmin) {
         response = await loginAdmin({
@@ -479,7 +485,7 @@ function LoginPage() {
             <button
               type="button"
               className="font-medium text-blue-600 hover:text-blue-700"
-              onClick={() => setError("Forgot password is not configured yet.")}
+              onClick={() => navigate("/forgot-password")}
             >
               Forgot password?
             </button>

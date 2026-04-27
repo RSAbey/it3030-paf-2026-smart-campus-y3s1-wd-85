@@ -16,7 +16,7 @@ export const NOTIFICATION_VISIBILITIES = ["Public", "Private"];
 function authConfig() {
   return {
     headers: {
-      "X-User-Email": localStorage.getItem("userEmail") || "",
+      "X-User-Email": localStorage.getItem("authEmail") || localStorage.getItem("userEmail") || "",
     },
   };
 }

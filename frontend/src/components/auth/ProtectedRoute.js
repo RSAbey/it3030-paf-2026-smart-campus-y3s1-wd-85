@@ -13,18 +13,18 @@ function getDashboardPath(role) {
 function ProtectedRoute({ allowedRoles, children }) {
   const [status, setStatus] = useState("checking");
   const [role, setRole] = useState(normalizeRole(localStorage.getItem("role")));
-  const userEmail = localStorage.getItem("userEmail");
+  const authEmail = localStorage.getItem("authEmail") || localStorage.getItem("userEmail");
 
   useEffect(() => {
     let isMounted = true;
 
-    if (!userEmail) {
+    if (!authEmail) {
       setRole("");
       setStatus("denied");
       return undefined;
     }
 
-    getCurrentUserRole(userEmail)
+    getCurrentUserRole(authEmail)
       .then((response) => {
         if (!isMounted) {
           return;
@@ -49,7 +49,7 @@ function ProtectedRoute({ allowedRoles, children }) {
     return () => {
       isMounted = false;
     };
-  }, [allowedRoles, userEmail]);
+  }, [allowedRoles, authEmail]);
 
   if (status === "checking") {
     return (
