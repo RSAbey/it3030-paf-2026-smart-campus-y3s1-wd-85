@@ -67,10 +67,7 @@ function BookingPage() {
     try {
       console.log("handleCancelBooking ID:", bookingId);
       await cancelBooking(bookingId);
-      const response = await getBookings(userId);
-      const data = normalizeBookingsResponse(response);
-      console.log(data);
-      setBookings(data);
+      await loadBookings();
     } catch (err) {
       console.error("Error cancelling booking:", err);
     }

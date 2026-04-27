@@ -32,7 +32,7 @@ export const cancelBooking = async (id) => {
     throw new Error("Invalid booking ID for cancel");
   }
 
-  const res = await axios.put(`/booking/${id}/cancel`);
+  const res = await axios.delete(`/booking/${id}`);
   return res.data;
 };
 
@@ -52,7 +52,8 @@ export const rejectBooking = async (id, reason) => {
 };
 
 export const getBookingByQrCode = async (qrCode) => {
-  const res = await axios.get(`/booking/qr/${qrCode}`);
+  const encodedQrCode = encodeURIComponent(qrCode);
+  const res = await axios.get(`/booking/qr/code/${encodedQrCode}`);
   return res.data;
 };
 

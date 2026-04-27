@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -56,7 +55,6 @@ public class BookingService {
 
         // Always force newly created bookings into the admin approval flow.
         booking.setStatus(STATUS_PENDING);
-        booking.setReason(null);
         booking.setQrCode(null);
         booking.setIsUsed(false);
         return bookingRepo.save(booking);
@@ -64,6 +62,10 @@ public class BookingService {
 
     public List<Booking> getAllBookings() {
         return bookingRepo.findAll();
+    }
+
+    public Booking getBookingById(Long id) {
+        return getBookingOrThrow(id);
     }
 
     public List<Booking> getBookingsByUser(Long userId) {
@@ -116,6 +118,7 @@ public class BookingService {
         booking.setDate(updatedBooking.getDate());
         booking.setStartTime(updatedBooking.getStartTime());
         booking.setEndTime(updatedBooking.getEndTime());
+        booking.setReason(updatedBooking.getReason());
 
         return bookingRepo.save(booking);
     }
@@ -129,10 +132,9 @@ public class BookingService {
             throw new RuntimeException("Only pending bookings can be approved");
         }
 
-        String qr = UUID.randomUUID().toString();
         booking.setStatus(STATUS_APPROVED);
         booking.setReason(null);
-        booking.setQrCode(qr);
+        booking.setQrCode("BOOKING_ID:" + booking.getId());
         booking.setIsUsed(false);
 
         return bookingRepo.save(booking);
