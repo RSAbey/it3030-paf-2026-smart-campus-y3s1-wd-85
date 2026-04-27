@@ -5,13 +5,20 @@ import {
   Calendar,
   Ticket,
   Bell,
-  Settings
+  Settings,
 } from "lucide-react";
 
 function Sidebar({ role = "admin" }) {
   const location = useLocation();
 
-  // 🟦 Admin Menu
+  const isActiveRoute = (itemPath) => {
+    if (itemPath === "/student/bookings") {
+      return location.pathname.includes("/student/bookings");
+    }
+
+    return location.pathname === itemPath;
+  };
+
   const adminMenu = [
     { name: "Dashboard", path: "/admin/dashboard", icon: <LayoutDashboard size={18} /> },
     { name: "Resources", path: "/admin/resources", icon: <Box size={18} /> },
@@ -21,46 +28,38 @@ function Sidebar({ role = "admin" }) {
     { name: "Settings", path: "/admin/settings", icon: <Settings size={18} /> },
   ];
 
-  // 🟩 Student Menu
   const studentMenu = [
     { name: "Dashboard", path: "/student/dashboard", icon: <LayoutDashboard size={18} /> },
     { name: "Resources", path: "/student/resources", icon: <Box size={18} /> },
     { name: "My Bookings", path: "/student/bookings", icon: <Calendar size={18} /> },
-    { name: "Tickets", path: "/student/tickets", icon: <Ticket size={18} /> },
+    { name: "Tickets", path: "/tickets", icon: <Ticket size={18} /> },
     { name: "Notifications", path: "/student/notifications", icon: <Bell size={18} /> },
     { name: "Settings", path: "/student/settings", icon: <Settings size={18} /> },
   ];
 
-  // 🎯 Select menu based on role
   const menu = role === "student" ? studentMenu : adminMenu;
 
   return (
-    <div className="w-64 h-screen bg-white border-r flex flex-col justify-between">
-      
-      {/* Top */}
+    <div className="flex h-screen w-64 flex-col justify-between border-r bg-white">
       <div>
-        <div className="p-5 flex items-center gap-2">
-          <div className="bg-blue-500 text-white px-2 py-1 rounded font-bold">
-            SC
-          </div>
+        <div className="flex items-center gap-2 p-5">
+          <div className="rounded bg-blue-500 px-2 py-1 font-bold text-white">SC</div>
           <div>
-            <h2 className="font-semibold text-sm">Smart Campus</h2>
+            <h2 className="text-sm font-semibold">Smart Campus</h2>
             <p className="text-xs text-gray-500">Operations Hub</p>
           </div>
         </div>
 
-        {/* Menu */}
-        <ul className="px-3 space-y-2">
+        <ul className="space-y-2 px-3">
           {menu.map((item) => (
             <li key={item.name}>
               <Link
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
-                  ${
-                    location.pathname === item.path
-                      ? "bg-blue-500 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                  isActiveRoute(item.path)
+                    ? "bg-blue-500 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
               >
                 {item.icon}
                 {item.name}
@@ -70,11 +69,7 @@ function Sidebar({ role = "admin" }) {
         </ul>
       </div>
 
-      {/* Bottom */}
-      <div className="p-4 text-red-500 text-sm cursor-pointer">
-        Logout
-      </div>
-
+      <div className="cursor-pointer p-4 text-sm text-red-500">Logout</div>
     </div>
   );
 }

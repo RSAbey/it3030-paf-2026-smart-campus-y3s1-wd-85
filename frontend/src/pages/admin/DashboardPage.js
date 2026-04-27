@@ -1,7 +1,8 @@
 import AdminLayout from "../../components/layout/AdminLayout";
 import StatCard from "../../components/dashboard/StatCard";
-import { Calendar, Ticket, Box, Users } from "lucide-react";
+import { Calendar, Ticket, Box, Users, ScanLine } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../../services/api";
 import api from "../../services/api";
 import {
@@ -10,6 +11,7 @@ import {
 } from "recharts";
 
 function DashboardPage() {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [resources, setResources] = useState([]);
@@ -38,7 +40,17 @@ function DashboardPage() {
 
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        {/* <button
+          type="button"
+          onClick={() => navigate("/admin/scan")}
+          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          <ScanLine size={16} />
+          Scan QR
+        </button> */}
+      </div>
 
       {/* Cards */}
       <div className="grid grid-cols-4 gap-6 mb-6">
