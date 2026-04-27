@@ -8,7 +8,7 @@ function Navbar({ role = "admin" }) {
   const userInitials = isStudent ? "JD" : "AU";
 
   return (
-    <div className="flex justify-between items-center bg-white px-6 py-3 border-b">
+    <div className="flex h-full w-full items-center justify-between bg-white">
       
       {/* Title */}
       <div>

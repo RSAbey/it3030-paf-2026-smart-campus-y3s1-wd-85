@@ -40,7 +40,7 @@ function Sidebar({ role = "admin" }) {
   const menu = role === "student" ? studentMenu : adminMenu;
 
   return (
-    <div className="flex h-screen w-64 flex-col justify-between border-r bg-white">
+    <div className="flex h-full w-64 flex-col justify-between bg-white">
       <div>
         <div className="flex items-center gap-2 p-5">
           <div className="rounded bg-blue-500 px-2 py-1 font-bold text-white">SC</div>

@@ -17,6 +17,7 @@ function App() {
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/student/bookings/new" element={<BookingPage />} />
         <Route path="/student/bookings" element={<BookingPage />} />
+        <Route path="/student/resources" element={<ResourcePage role="student" />} />
         <Route path="/student/notifications" element={<NotificationsPage role="student" />} />
         <Route path="/student/settings" element={<SettingsPage role="student" />} />
         <Route path="/admin/dashboard" element={<DashboardPage />} />
