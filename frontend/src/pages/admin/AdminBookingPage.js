@@ -5,10 +5,11 @@ import {
   Clock3,
   QrCode,
   ShieldCheck,
+  X,
   XCircle,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import BookingModal from "../../components/bookings/BookingModal";
+import QRScanner from "../../components/QRScanner";
 import AdminLayout from "../../components/layout/AdminLayout";
 import {
   approveBooking,
@@ -101,13 +102,13 @@ function buildCalendarDays(bookings) {
 }
 
 function AdminBookingPage() {
-  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState(null);
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   console.log("open state:", open);
 
@@ -210,7 +211,7 @@ function AdminBookingPage() {
 
           <div className="flex gap-3">
             <button
-              onClick={() => navigate("/admin/scan")}
+              onClick={() => setShowQRModal(true)}
               className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
               <QrCode size={18} />
@@ -440,6 +441,32 @@ function AdminBookingPage() {
           close={() => setOpen(false)}
           refresh={loadBookings}
         />
+      )}
+
+      {showQRModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="relative w-full max-w-[400px] rounded-xl bg-white p-5 shadow-lg">
+            <button
+              type="button"
+              onClick={() => setShowQRModal(false)}
+              className="absolute right-2 top-2 text-gray-500 transition hover:text-black"
+            >
+              <X size={18} />
+            </button>
+
+            <h2 className="mb-3 text-lg font-semibold text-slate-900">
+              QR Scanner
+            </h2>
+
+            <QRScanner
+              isOpen={showQRModal}
+              onScan={(data) => {
+                console.log("Scanned:", data);
+                setShowQRModal(false);
+              }}
+            />
+          </div>
+        </div>
       )}
     </AdminLayout>
   );
