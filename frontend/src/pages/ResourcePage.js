@@ -1,9 +1,11 @@
-import {use, useEffect, useState} from "react"; // eslint-disable-next-line no-unused-vars
-import api from "../services/api"; // eslint-disable-next-line no-unused-vars
+import { useEffect, useState } from "react";
+import AdminLayout from "../components/layout/AdminLayout";
+import StudentLayout from "../components/layout/StudentLayout";
+import api from "../services/api";
 
-// eslint-disable-next-line no-unused-vars
-function ResourcePage() {
+function ResourcePage({ role = "admin" }) {
     const [resources, setResources] = useState([]);
+    const Layout = role === "student" ? StudentLayout : AdminLayout;
 
     useEffect(() => {
         api.get('/resources')
@@ -12,12 +14,14 @@ function ResourcePage() {
     }, []);
 
     return (
-        <div>
-            <h1>Resources</h1>
-            {resources.map((r) => (
-                <p key={r.id}>{r.name}</p>
-            ))}
-        </div>
+        <Layout>
+            <div>
+                <h1>Resources</h1>
+                {resources.map((r) => (
+                    <p key={r.id}>{r.name}</p>
+                ))}
+            </div>
+        </Layout>
     );
 }
 

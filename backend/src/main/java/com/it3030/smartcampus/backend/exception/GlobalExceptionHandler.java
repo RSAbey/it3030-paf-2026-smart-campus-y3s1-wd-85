@@ -1,30 +1,15 @@
 package com.it3030.smartcampus.backend.exception;
 
-<<<<<<< HEAD
-=======
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
->>>>>>> origin/feature/booking-conflict
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-<<<<<<< HEAD
-
-import java.util.Map;
-
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException exception) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", exception.getMessage()));
-=======
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,6 +50,5 @@ public class GlobalExceptionHandler {
         body.put("path", request.getRequestURI());
 
         return ResponseEntity.badRequest().body(body);
->>>>>>> origin/feature/booking-conflict
     }
 }
