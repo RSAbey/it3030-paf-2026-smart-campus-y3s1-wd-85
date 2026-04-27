@@ -23,6 +23,7 @@ public class DashboardController {
     private final DashboardService service;
 
     //Student Dashboard API
+    // TODO(security): Verify the authenticated student matches this userId, or require an admin role.
     @GetMapping("/student/{userId}")
     public Map<String, Object> getStudentStats(@PathVariable Long userId) {
         return service.getStudentStats(userId);
@@ -32,6 +33,7 @@ public class DashboardController {
         this.service = service;
     }
 
+    // TODO(security): Require an authenticated admin role before returning admin dashboard stats.
     @GetMapping("/stats")
     public DashboardStats getStats() {
         return service.getStats();
