@@ -16,7 +16,6 @@ import {
   X,
 } from "lucide-react";
 import AdminLayout from "../components/layout/AdminLayout";
-import StudentLayout from "../components/layout/StudentLayout";
 import StatCard from "../components/dashboard/StatCard";
 import {
   createResource,
@@ -170,9 +169,7 @@ function getSlotClass(status) {
   return "border-yellow-200 bg-yellow-50 text-yellow-700";
 }
 
-function ResourcePage({ role = "admin" }) {
-  const Layout = role === "student" ? StudentLayout : AdminLayout;
-  const isStudent = role === "student";
+function ResourcePage() {
   const [resources, setResources] = useState([]);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [loading, setLoading] = useState(true);
@@ -440,28 +437,24 @@ function ResourcePage({ role = "admin" }) {
   };
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="space-y-6 text-gray-800" style={{ fontFamily: "Inter, Poppins, sans-serif" }}>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-medium text-blue-600">
-              {isStudent ? "Campus Resources" : "Facilities Admin"}
-            </p>
+            <p className="text-sm font-medium text-blue-600">Facilities Admin</p>
             <h1 className="text-2xl font-bold text-gray-800">
-              {isStudent ? "Available Facilities & Resources" : "Facilities & Resource Management"}
+              Facilities & Resource Management
             </h1>
           </div>
 
-          {!isStudent && (
-            <button
-              type="button"
-              onClick={openAddModal}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700"
-            >
-              <Plus size={18} />
-              Add Resource
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={openAddModal}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700"
+          >
+            <Plus size={18} />
+            Add Resource
+          </button>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -672,28 +665,24 @@ function ResourcePage({ role = "admin" }) {
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex flex-wrap items-center justify-end gap-2">
-                          {!isStudent && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => openEditModal(resource)}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-100 text-blue-600 transition hover:bg-blue-50"
-                                title="Edit resource"
-                                aria-label={`Edit ${resource.name}`}
-                              >
-                                <Edit size={16} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setDeleteTarget(resource)}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 text-red-600 transition hover:bg-red-50"
-                                title="Delete resource"
-                                aria-label={`Delete ${resource.name}`}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(resource)}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-100 text-blue-600 transition hover:bg-blue-50"
+                            title="Edit resource"
+                            aria-label={`Edit ${resource.name}`}
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(resource)}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 text-red-600 transition hover:bg-red-50"
+                            title="Delete resource"
+                            aria-label={`Delete ${resource.name}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
                           <button
                             type="button"
                             onClick={() => checkAvailabilityForResource(resource)}
@@ -800,7 +789,7 @@ function ResourcePage({ role = "admin" }) {
         </div>
       </div>
 
-      {!isStudent && modalOpen && (
+      {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 px-4 py-6">
           <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b px-5 py-4">
@@ -925,7 +914,7 @@ function ResourcePage({ role = "admin" }) {
         </div>
       )}
 
-      {!isStudent && deleteTarget && (
+      {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 px-4 py-6">
           <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
             <div className="mb-4 flex items-center gap-3">
@@ -965,7 +954,7 @@ function ResourcePage({ role = "admin" }) {
           </div>
         </div>
       )}
-    </Layout>
+    </AdminLayout>
   );
 }
 
