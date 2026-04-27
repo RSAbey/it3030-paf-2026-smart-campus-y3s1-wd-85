@@ -80,6 +80,14 @@ public class AuthService {
         requireRoleByEmail(email, ROLE_STUDENT, "You are not authorized as student.");
     }
 
+    public User requireAdminUser(String email) {
+        return requireRoleByEmail(email, ROLE_ADMIN, "You are not authorized as admin.");
+    }
+
+    public User requireStudentUser(String email) {
+        return requireRoleByEmail(email, ROLE_STUDENT, "You are not authorized as student.");
+    }
+
     private User login(String email, String password) {
         validatePassword(password);
 
@@ -114,11 +122,12 @@ public class AuthService {
         return userRepository.save(admin);
     }
 
-    private void requireRoleByEmail(String email, String requiredRole, String errorMessage) {
+    private User requireRoleByEmail(String email, String requiredRole, String errorMessage) {
         User user = userRepository.findByEmailIgnoreCase(normalizeEmail(email))
                 .orElseThrow(() -> new NoSuchElementException("User not found."));
 
         requireRole(user, requiredRole, errorMessage);
+        return user;
     }
 
     private void requireRole(User user, String requiredRole, String errorMessage) {

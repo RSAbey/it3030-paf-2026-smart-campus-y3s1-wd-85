@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import StudentDashboard from "./pages/student/DashboardPage";
 import DashboardPage from "./pages/admin/DashboardPage";
 import ResourcePage from "./pages/ResourcePage";
@@ -6,16 +6,29 @@ import BookingPage from "./pages/BookingPage";
 import TicketPage from "./pages/TicketPage";
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
+import StudentNotificationsPage from "./pages/student/StudentNotificationsPage";
+import NotificationSettingsPage from "./pages/student/NotificationSettingsPage";
 
 const adminOnly = ["admin"];
 const studentOnly = ["student"];
 const allRoles = ["student", "admin"];
+
+function DashboardRedirect() {
+  const role = (localStorage.getItem("role") || "").toLowerCase();
+  return <Navigate to={role === "admin" ? "/admin/dashboard" : "/student/dashboard"} replace />;
+}
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LoginPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/dashboard"
+          element={<ProtectedRoute allowedRoles={allRoles}><DashboardRedirect /></ProtectedRoute>}
+        />
         <Route
           path="/student/dashboard"
           element={<ProtectedRoute allowedRoles={studentOnly}><StudentDashboard /></ProtectedRoute>}
@@ -49,6 +62,10 @@ function App() {
           element={<ProtectedRoute allowedRoles={adminOnly}><TicketPage /></ProtectedRoute>}
         />
         <Route
+          path="/admin/notifications"
+          element={<ProtectedRoute allowedRoles={adminOnly}><AdminNotificationsPage /></ProtectedRoute>}
+        />
+        <Route
           path="/student/resources"
           element={<ProtectedRoute allowedRoles={studentOnly}><ResourcePage /></ProtectedRoute>}
         />
@@ -59,6 +76,26 @@ function App() {
         <Route
           path="/student/tickets"
           element={<ProtectedRoute allowedRoles={studentOnly}><TicketPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/student/notifications"
+          element={<ProtectedRoute allowedRoles={studentOnly}><StudentNotificationsPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/student/settings"
+          element={<ProtectedRoute allowedRoles={studentOnly}><NotificationSettingsPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/student/notifications/settings"
+          element={<ProtectedRoute allowedRoles={studentOnly}><NotificationSettingsPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/*"
+          element={<ProtectedRoute allowedRoles={adminOnly}><Navigate to="/admin/dashboard" replace /></ProtectedRoute>}
+        />
+        <Route
+          path="/student/*"
+          element={<ProtectedRoute allowedRoles={studentOnly}><Navigate to="/student/dashboard" replace /></ProtectedRoute>}
         />
       </Routes>
     </BrowserRouter>

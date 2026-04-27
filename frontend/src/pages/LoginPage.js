@@ -99,6 +99,12 @@ function LoginPage() {
 
     if (!email.trim()) {
       errors.email = "Email address is required.";
+    } else if (isRegistering) {
+      // Validate email format for registration
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        errors.email = "Please enter a valid email address.";
+      }
     }
 
     const passwordError = validatePassword(password, isRegistering ? confirmPassword : undefined);
@@ -147,7 +153,6 @@ function LoginPage() {
       let response;
 
       if (isRegistering) {
-        // TODO: Backend registration endpoint integration
         response = await registerStudent({
           firstName: firstName.trim(),
           lastName: lastName.trim(),
@@ -156,16 +161,24 @@ function LoginPage() {
           role: "student"
         });
 
-        // Show success message and switch to Sign In tab
+        // Show success message
         setError("");
-        setMode("login");
+        
+        // Clear all registration form fields
         setEmail("");
         setPassword("");
         setConfirmPassword("");
         setFirstName("");
         setLastName("");
         setFieldErrors({});
-        alert("Registration successful! Please sign in with your credentials.");
+        
+        // Show success popup and switch to Sign In tab after delay
+        setTimeout(() => {
+          setMode("login");
+          alert("Registration successful. Please sign in.");
+        }, 500);
+        
+        return;
       } else if (isAdmin) {
         response = await loginAdmin({
           email: email.trim(),
@@ -180,7 +193,13 @@ function LoginPage() {
 
       saveSession(response.data);
     } catch (err) {
-      setError(getErrorMessage(err, "Unable to sign in. Please try again."));
+      // Handle registration errors
+      if (isRegistering) {
+        const errorMsg = getErrorMessage(err, "Registration failed. Please try again.");
+        setError(errorMsg);
+      } else {
+        setError(getErrorMessage(err, "Unable to sign in. Please try again."));
+      }
     } finally {
       setLoading(false);
     }
@@ -325,7 +344,10 @@ function LoginPage() {
                     id="firstName"
                     type="text"
                     value={firstName}
-                    onChange={(event) => setFirstName(event.target.value)}
+                    onChange={(event) => {
+                      setFirstName(event.target.value);
+                      if (error) setError("");
+                    }}
                     placeholder="First name"
                     autoComplete="given-name"
                     className="h-[52px] w-full rounded-lg border border-gray-200 px-4 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -342,7 +364,10 @@ function LoginPage() {
                     id="lastName"
                     type="text"
                     value={lastName}
-                    onChange={(event) => setLastName(event.target.value)}
+                    onChange={(event) => {
+                      setLastName(event.target.value);
+                      if (error) setError("");
+                    }}
                     placeholder="Last name"
                     autoComplete="family-name"
                     className="h-[52px] w-full rounded-lg border border-gray-200 px-4 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -363,7 +388,10 @@ function LoginPage() {
               id="email"
               type="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                if (error) setError("");
+              }}
               placeholder={isAdmin ? "admin@campus.edu" : "student@campus.edu"}
               autoComplete="email"
               className="h-[52px] w-full rounded-lg border border-gray-200 px-4 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -382,7 +410,10 @@ function LoginPage() {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  if (error) setError("");
+                }}
                 placeholder="********"
                 autoComplete={isRegistering ? "new-password" : "current-password"}
                 className="h-[52px] w-full rounded-lg border border-gray-200 px-4 pr-12 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -413,7 +444,10 @@ function LoginPage() {
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  onChange={(event) => {
+                    setConfirmPassword(event.target.value);
+                    if (error) setError("");
+                  }}
                   placeholder="********"
                   autoComplete="new-password"
                   className="h-[52px] w-full rounded-lg border border-gray-200 px-4 pr-12 text-base text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"

@@ -19,6 +19,12 @@ const MOCK_USER = {
     password: '12345678'
 };
 
+const MOCK_ADMIN = {
+    email: 'admin@campus.edu',
+    password: '12345678',
+    name: 'Admin User'
+};
+
 // POST /api/auth/login/student
 app.post('/api/auth/login/student', (req, res) => {
     console.log('Login request received:', {
@@ -55,6 +61,43 @@ app.post('/api/auth/login/student', (req, res) => {
     });
 });
 
+// POST /api/auth/login/admin
+app.post('/api/auth/login/admin', (req, res) => {
+    console.log('Admin login request received:', {
+        body: req.body,
+        timestamp: new Date().toISOString()
+    });
+
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+        console.log('Admin login failed: Missing email or password');
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid admin credentials'
+        });
+    }
+
+    // TODO: Replace with real database query for admin authentication
+    if (email === MOCK_ADMIN.email && password === MOCK_ADMIN.password) {
+        console.log('Admin login successful for:', email);
+        return res.json({
+            success: true,
+            role: 'admin',
+            name: MOCK_ADMIN.name,
+            email: email,
+            message: 'Admin login successful'
+        });
+    }
+
+    console.log('Admin login failed: Invalid credentials for:', email);
+    return res.status(401).json({
+        success: false,
+        message: 'Invalid admin credentials'
+    });
+});
+
 // POST /api/auth/register/student
 app.post('/api/auth/register/student', (req, res) => {
     console.log('Student registration request received:', {
@@ -82,19 +125,23 @@ app.post('/api/auth/register/student', (req, res) => {
         });
     }
 
-    // TODO: Replace with real database/Firebase registration
+    // TODO: Replace mock logic with real database/Firebase validation
+    // Check if email already exists (mock validation)
+    const registeredEmails = ['student@test.com', 'admin@campus.edu', 'john.doe@test.com'];
+    if (registeredEmails.includes(email.toLowerCase())) {
+        console.log('Registration failed: Email already exists:', email);
+        return res.status(400).json({
+            success: false,
+            message: 'Email already exists'
+        });
+    }
+
     // Store user in mock database
     console.log('Registration successful for:', email);
     return res.json({
         success: true,
         message: 'Registration successful',
-        role: 'student',
-        user: {
-            firstName,
-            lastName,
-            email,
-            role: 'student'
-        }
+        role: 'student'
     });
 });
 

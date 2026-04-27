@@ -1,10 +1,17 @@
 import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  getNotificationSettings,
+  getStudentNotifications,
+} from "../../services/notificationService";
 
-function Navbar() {
+function Navbar({ role }) {
   const [userName, setUserName] = useState("User");
   const [userEmail, setUserEmail] = useState("user@email.com");
   const [avatarInitials, setAvatarInitials] = useState("U");
+  const [unreadCount, setUnreadCount] = useState(0);
+  const effectiveRole = (role || localStorage.getItem("role") || "").toLowerCase();
 
   useEffect(() => {
     // Get user data from localStorage
@@ -36,6 +43,59 @@ function Navbar() {
     }
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    if (effectiveRole !== "student") {
+      setUnreadCount(0);
+      return undefined;
+    }
+
+    const loadUnreadCount = () => {
+      Promise.all([getStudentNotifications(), getNotificationSettings()])
+        .then(([notificationsResponse, settingsResponse]) => {
+          if (!isMounted) {
+            return;
+          }
+
+          const notifications = Array.isArray(notificationsResponse.data)
+            ? notificationsResponse.data
+            : [];
+          const settings = settingsResponse.data || {};
+          const enabledCategories = Array.isArray(settings.categories)
+            ? settings.categories
+            : [];
+          const notificationsEnabled = settings.enabled !== false;
+          const highPriorityEnabled = settings.highPriorityAlerts !== false;
+
+          const count = notifications.filter((notification) => {
+            const matchesSettings =
+              notificationsEnabled &&
+              enabledCategories.includes(notification.category) &&
+              (highPriorityEnabled ||
+                !["High", "Critical"].includes(notification.priority));
+
+            return matchesSettings && !notification.isRead;
+          }).length;
+
+          setUnreadCount(count);
+        })
+        .catch(() => {
+          if (isMounted) {
+            setUnreadCount(0);
+          }
+        });
+    };
+
+    loadUnreadCount();
+    window.addEventListener("notifications-updated", loadUnreadCount);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("notifications-updated", loadUnreadCount);
+    };
+  }, [effectiveRole]);
+
   const generateInitials = (name) => {
     if (!name || typeof name !== "string") return "U";
     const words = name.trim().split(/\s+/);
@@ -58,12 +118,18 @@ function Navbar() {
       <div className="flex items-center gap-5">
 
         {/* Notification */}
-        <div className="relative">
+        <Link
+          to={effectiveRole === "admin" ? "/admin/notifications" : "/student/notifications"}
+          className="relative"
+          aria-label="Notifications"
+        >
           <Bell className="text-gray-600" />
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 rounded-full">
-            3
-          </span>
-        </div>
+          {unreadCount > 0 && (
+            <span className="absolute -top-2 -right-2 min-w-5 rounded-full bg-red-500 px-1 text-center text-xs text-white">
+              {unreadCount}
+            </span>
+          )}
+        </Link>
 
         {/* User */}
         <div className="flex items-center gap-2">

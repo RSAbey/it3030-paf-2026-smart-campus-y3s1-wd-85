@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Box,
@@ -10,6 +10,7 @@ import {
 
 function Sidebar({ role = "admin" }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // 🟦 Admin Menu
   const adminMenu = [
@@ -33,6 +34,18 @@ function Sidebar({ role = "admin" }) {
 
   // 🎯 Select menu based on role
   const menu = role === "student" ? studentMenu : adminMenu;
+
+  const handleLogout = () => {
+    const confirmed = window.confirm("Are you sure you want to logout?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    localStorage.clear();
+    sessionStorage.clear();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <div className="w-64 h-screen bg-white border-r flex flex-col justify-between">
@@ -71,9 +84,13 @@ function Sidebar({ role = "admin" }) {
       </div>
 
       {/* Bottom */}
-      <div className="p-4 text-red-500 text-sm cursor-pointer">
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="p-4 text-left text-sm text-red-500 cursor-pointer hover:text-red-600"
+      >
         Logout
-      </div>
+      </button>
 
     </div>
   );

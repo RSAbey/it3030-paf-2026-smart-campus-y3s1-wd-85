@@ -19,6 +19,7 @@ function ProtectedRoute({ allowedRoles, children }) {
     let isMounted = true;
 
     if (!userEmail) {
+      setRole("");
       setStatus("denied");
       return undefined;
     }
@@ -39,9 +40,9 @@ function ProtectedRoute({ allowedRoles, children }) {
           return;
         }
 
-        localStorage.removeItem("role");
-        localStorage.removeItem("userEmail");
-        localStorage.removeItem("userId");
+        localStorage.clear();
+        sessionStorage.clear();
+        setRole("");
         setStatus("denied");
       });
 
@@ -60,7 +61,7 @@ function ProtectedRoute({ allowedRoles, children }) {
 
   if (status === "denied") {
     if (!role) {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/login" replace />;
     }
 
     return <Navigate to={getDashboardPath(role)} replace />;
