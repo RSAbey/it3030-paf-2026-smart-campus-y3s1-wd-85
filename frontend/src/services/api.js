@@ -1,13 +1,18 @@
-import axios from 'axios';
+import axios from "axios";
 
 const api = axios.create({
-    baseURL: 'http://localhost:8080/api',
+  baseURL: "http://localhost:8080/api",
 });
 
 api.interceptors.request.use((config) => {
-    console.log("API CALL TEST");
-    console.log("API Request:", `${config.baseURL}${config.url}`);
-    return config;
+  const stored = localStorage.getItem("smart-campus-auth");
+  const auth = stored ? JSON.parse(stored) : null;
+
+  if (auth?.token) {
+    config.headers.Authorization = `Bearer ${auth.token}`;
+  }
+
+  return config;
 });
 
 export default api;

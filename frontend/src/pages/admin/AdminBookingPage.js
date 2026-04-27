@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import {
   CalendarDays,
   CheckCircle2,
   Clock3,
   QrCode,
-  ShieldCheck,
+  Search,
   XCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +13,6 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import {
   approveBooking,
   getAllBookings,
-  getResources,
   rejectBooking,
 } from "../../services/bookingService";
 
@@ -21,108 +21,48 @@ const statusStyles = {
   PENDING: "bg-yellow-100 text-yellow-700",
   REJECTED: "bg-red-100 text-red-700",
   CANCELLED: "bg-gray-100 text-gray-700",
+  USED: "bg-blue-100 text-blue-700",
 };
 
-const monthFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  year: "numeric",
-});
+const filters = ["ALL", "PENDING", "APPROVED", "REJECTED", "USED", "CANCELLED"];
 
-const weekdayFormatter = new Intl.DateTimeFormat("en-US", {
-  weekday: "short",
-});
-
-const dayFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
-
-function normalizeArrayResponse(response) {
-  if (Array.isArray(response)) {
-    return response;
+function formatBookingDate(date) {
+  if (!date) {
+    return "No date";
   }
 
-  if (Array.isArray(response?.data)) {
-    return response.data;
-  }
-
-  if (Array.isArray(response?.content)) {
-    return response.content;
-  }
-
-  if (Array.isArray(response?.data?.data)) {
-    return response.data.data;
-  }
-
-  if (Array.isArray(response?.data?.content)) {
-    return response.data.content;
-  }
-
-  return [];
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
-function buildCalendarDays(bookings) {
-  const safeBookings = Array.isArray(bookings) ? bookings : [];
-  const bookingDates = new Set(
-    safeBookings.map((booking) => booking?.date).filter(Boolean)
-  );
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const startOffset = firstDay.getDay();
-  const days = [];
-
-  for (let i = 0; i < startOffset; i += 1) {
-    days.push(null);
+function formatBookingTime(startTime, endTime) {
+  if (!startTime || !endTime) {
+    return "No time";
   }
 
-  for (let day = 1; day <= lastDay.getDate(); day += 1) {
-    const date = new Date(year, month, day);
-    const isoDate = date.toISOString().split("T")[0];
-    days.push({
-      day,
-      isoDate,
-      isToday: isoDate === today.toISOString().split("T")[0],
-      isBooked: bookingDates.has(isoDate),
-    });
-  }
-
-  return {
-    label: monthFormatter.format(firstDay),
-    weekdays: Array.from({ length: 7 }, (_, index) =>
-      weekdayFormatter.format(new Date(2026, 3, 5 + index))
-    ),
-    days,
-  };
+  return `${startTime.slice(0, 5)} - ${endTime.slice(0, 5)}`;
 }
 
 function AdminBookingPage() {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
-  const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState(null);
-  const [message, setMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeFilter, setActiveFilter] = useState("ALL");
 
   const loadBookings = async () => {
     try {
-      const [bookingsRes, resourcesRes] = await Promise.all([
-        getAllBookings(),
-        getResources(),
-      ]);
-
-      const normalizedBookings = normalizeArrayResponse(bookingsRes);
-      console.log(normalizedBookings);
-      setBookings(normalizedBookings);
-      setResources(normalizeArrayResponse(resourcesRes));
+      setLoading(true);
+      const data = await getAllBookings();
+      setBookings(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
       setBookings([]);
-      setResources([]);
-      setMessage("Failed to load bookings");
+      toast.error("Failed to load bookings");
     } finally {
       setLoading(false);
     }
@@ -132,37 +72,45 @@ function AdminBookingPage() {
     loadBookings();
   }, []);
 
-  const safeBookings = Array.isArray(bookings) ? bookings : [];
-  const safeResources = Array.isArray(resources) ? resources : [];
-
-  const resourceNameMap = useMemo(() => {
-    return safeResources.reduce((map, resource) => {
-      map[resource.id] = resource.name;
-      return map;
-    }, {});
-  }, [safeResources]);
-
-  const calendar = useMemo(() => buildCalendarDays(safeBookings), [safeBookings]);
-
-  const pendingCount = safeBookings.filter(
-    (booking) => booking.status === "PENDING"
+  const pendingCount = bookings.filter(
+    (booking) => booking.status?.toUpperCase() === "PENDING"
   ).length;
-  const approvedCount = safeBookings.filter(
-    (booking) => booking.status === "APPROVED"
+  const approvedCount = bookings.filter(
+    (booking) => booking.status?.toUpperCase() === "APPROVED"
   ).length;
-  const rejectedCount = safeBookings.filter(
-    (booking) => booking.status === "REJECTED"
+  const rejectedCount = bookings.filter(
+    (booking) => booking.status?.toUpperCase() === "REJECTED"
   ).length;
+  const usedCount = bookings.filter(
+    (booking) => booking.status?.toUpperCase() === "USED"
+  ).length;
+
+  const filteredBookings = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return bookings.filter((booking) => {
+      const status = booking.status?.toUpperCase() || "";
+      const matchesFilter = activeFilter === "ALL" || status === activeFilter;
+      const matchesSearch =
+        !normalizedSearch ||
+        booking.resourceName?.toLowerCase().includes(normalizedSearch) ||
+        booking.userName?.toLowerCase().includes(normalizedSearch) ||
+        booking.location?.toLowerCase().includes(normalizedSearch) ||
+        booking.reason?.toLowerCase().includes(normalizedSearch);
+
+      return matchesFilter && matchesSearch;
+    });
+  }, [activeFilter, bookings, searchTerm]);
 
   const handleApprove = async (id) => {
     try {
       setActionId(id);
       await approveBooking(id);
-      setMessage("Booking Approved");
+      toast.success("Booking approved");
       await loadBookings();
     } catch (err) {
       console.error(err);
-      setMessage(
+      toast.error(
         err.response?.data?.message ||
           err.response?.data ||
           "Failed to approve booking"
@@ -174,16 +122,18 @@ function AdminBookingPage() {
 
   const handleReject = async (id) => {
     const reason = prompt("Enter rejection reason:");
-    if (!reason) return;
+    if (!reason) {
+      return;
+    }
 
     try {
       setActionId(id);
       await rejectBooking(id, reason);
-      setMessage("Booking Rejected");
+      toast.success("Booking rejected");
       await loadBookings();
     } catch (err) {
       console.error(err);
-      setMessage(
+      toast.error(
         err.response?.data?.message ||
           err.response?.data ||
           "Failed to reject booking"
@@ -196,233 +146,201 @@ function AdminBookingPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Booking System</h1>
-            <p className="text-sm text-gray-500">
-              Manage resource bookings and approval decisions
+            <h1 className="text-3xl font-bold text-slate-900">Booking Control</h1>
+            <p className="mt-2 text-sm text-slate-500">
+              Review pending requests, approve access, and track scanned QR entries.
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
+              type="button"
               onClick={() => navigate("/admin/scan")}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
-              <QrCode size={18} />
-              Scan QR
-            </button>
-
-            <button className="rounded-lg bg-blue-600 px-4 py-2 text-white">
-              + New Booking
+              <QrCode size={16} />
+              Open QR Scanner
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
-            <p className="text-sm text-slate-500">Pending</p>
-            <p className="mt-1 text-2xl font-bold text-amber-500">
-              {pendingCount}
-            </p>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <p className="text-sm text-slate-500">Pending Approval</p>
+            <p className="mt-2 text-3xl font-bold text-amber-500">{pendingCount}</p>
           </div>
-          <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
             <p className="text-sm text-slate-500">Approved</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-500">
-              {approvedCount}
-            </p>
+            <p className="mt-2 text-3xl font-bold text-green-500">{approvedCount}</p>
           </div>
-          <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
             <p className="text-sm text-slate-500">Rejected</p>
-            <p className="mt-1 text-2xl font-bold text-rose-500">
-              {rejectedCount}
-            </p>
+            <p className="mt-2 text-3xl font-bold text-red-500">{rejectedCount}</p>
+          </div>
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <p className="text-sm text-slate-500">Used Entries</p>
+            <p className="mt-2 text-3xl font-bold text-blue-500">{usedCount}</p>
           </div>
         </div>
 
-        {message && (
-          <div className="rounded-2xl bg-white px-5 py-4 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200">
-            {message}
-          </div>
-        )}
-
-        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
-              <CalendarDays size={22} />
+        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full max-w-xl">
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search by student, resource, location, or reason"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
             </div>
-            <div>
-              <h2 className="text-2xl font-semibold text-slate-900">
-                {calendar.label} - Availability Calendar
-              </h2>
-              <p className="text-sm text-slate-500">
-                Highlighted dates show days with booking activity.
-              </p>
-            </div>
-          </div>
 
-          <div className="mt-6 grid grid-cols-7 gap-3">
-            {calendar.weekdays.map((weekday) => (
-              <div
-                key={weekday}
-                className="pb-2 text-center text-sm font-semibold uppercase tracking-wide text-slate-500"
-              >
-                {weekday}
-              </div>
-            ))}
-
-            {calendar.days.map((day, index) => {
-              if (!day) {
-                return (
-                  <div
-                    key={`empty-${index}`}
-                    className="h-32 rounded-2xl bg-slate-50"
-                  />
-                );
-              }
-
-              const classes = day.isToday
-                ? "bg-blue-600 text-white"
-                : day.isBooked
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-slate-50 text-slate-500";
-
-              return (
-                <div
-                  key={day.isoDate}
-                  className={`flex h-32 items-center justify-center rounded-2xl text-lg font-semibold ${classes}`}
+            <div className="flex flex-wrap gap-2">
+              {filters.map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setActiveFilter(filter)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    activeFilter === filter
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
                 >
-                  {day.day}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-6 border-t border-slate-100 pt-4 text-sm text-slate-600">
-            <div className="flex items-center gap-2">
-              <span className="h-4 w-4 rounded bg-blue-600"></span>
-              Today
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-4 w-4 rounded bg-emerald-100"></span>
-              Booked
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-4 w-4 rounded bg-slate-100"></span>
-              Available
+                  {filter}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+        <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
           <div className="border-b border-slate-100 px-6 py-5">
-            <h2 className="text-3xl font-semibold text-slate-900">
-              All Bookings
-            </h2>
+            <h2 className="text-2xl font-semibold text-slate-900">All Bookings</h2>
           </div>
 
           {loading && (
-            <div className="px-6 py-8 text-sm text-slate-500">
-              Loading bookings...
+            <div className="px-6 py-8 text-sm text-slate-500">Loading bookings...</div>
+          )}
+
+          {!loading && filteredBookings.length === 0 && (
+            <div className="px-6 py-10 text-center text-sm text-slate-500">
+              No bookings match the current filters.
             </div>
           )}
 
-          {!loading && safeBookings.length === 0 && (
-            <div className="px-6 py-8 text-sm text-slate-500">
-              No bookings found.
-            </div>
-          )}
+          {!loading && filteredBookings.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-100">
+                <thead className="bg-slate-50">
+                  <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="px-6 py-4 font-semibold">Resource</th>
+                    <th className="px-6 py-4 font-semibold">Student</th>
+                    <th className="px-6 py-4 font-semibold">Schedule</th>
+                    <th className="px-6 py-4 font-semibold">Location</th>
+                    <th className="px-6 py-4 font-semibold">Status</th>
+                    <th className="px-6 py-4 font-semibold">QR</th>
+                    <th className="px-6 py-4 font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredBookings.map((booking) => {
+                    const status = booking.status?.toUpperCase() || "";
+                    const isActionLoading = actionId === booking.id;
 
-          {!loading && safeBookings.length > 0 && (
-            <div className="divide-y divide-slate-100">
-              {safeBookings.map((booking) => {
-                const bookingStatus = booking.status?.toUpperCase?.() || "";
-                const resourceName =
-                  booking.resourceName ||
-                  resourceNameMap[booking.resourceId] ||
-                  `Resource #${booking.resourceId}`;
-
-                const isActionLoading = actionId === booking.id;
-
-                return (
-                  <div
-                    key={booking.id}
-                    className="flex flex-col gap-4 px-6 py-6 xl:flex-row xl:items-center xl:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <h3 className="text-2xl font-semibold text-slate-900">
-                          {resourceName}
-                        </h3>
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                            statusStyles[bookingStatus] ||
-                            "bg-slate-100 text-slate-700"
-                          }`}
-                        >
-                          {bookingStatus || booking.status}
-                        </span>
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap items-center gap-5 text-sm text-slate-500">
-                        <div className="flex items-center gap-2">
-                          <CalendarDays size={16} />
-                          {booking.date
-                            ? dayFormatter.format(
-                                new Date(`${booking.date}T00:00:00`)
-                              )
-                            : "No date"}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock3 size={16} />
-                          {booking.startTime} - {booking.endTime}
-                        </div>
-                        <div>Booked by: User #{booking.userId}</div>
-                      </div>
-
-                      {booking.reason && (
-                        <p className="mt-3 text-sm text-rose-600">
-                          Reason: {booking.reason}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      {bookingStatus === "APPROVED" && (
-                        <div className="flex items-center gap-2 text-emerald-500">
-                          <ShieldCheck size={24} />
-                        </div>
-                      )}
-
-                      {bookingStatus === "REJECTED" && (
-                        <div className="flex items-center gap-2 text-rose-500">
-                          <XCircle size={24} />
-                        </div>
-                      )}
-
-                      {bookingStatus === "PENDING" && (
-                        <div className="mt-2 flex gap-2">
-                          <button
-                            onClick={() => handleApprove(booking.id)}
-                            disabled={isActionLoading}
-                            className="rounded bg-green-500 px-3 py-1 text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    return (
+                      <tr key={booking.id} className="align-top">
+                        <td className="px-6 py-5">
+                          <div>
+                            <p className="font-semibold text-slate-900">
+                              {booking.resourceName || `Resource #${booking.resourceId}`}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                              {booking.reason || "No booking reason provided"}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div>
+                            <p className="font-medium text-slate-800">
+                              {booking.userName || `User #${booking.userId}`}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                              Booking #{booking.id}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="space-y-2 text-sm text-slate-600">
+                            <div className="flex items-center gap-2">
+                              <CalendarDays size={15} className="text-slate-400" />
+                              {formatBookingDate(booking.date)}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock3 size={15} className="text-slate-400" />
+                              {formatBookingTime(booking.startTime, booking.endTime)}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 text-sm text-slate-600">
+                          {booking.location || "Location not available"}
+                        </td>
+                        <td className="px-6 py-5">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                              statusStyles[status] || "bg-slate-100 text-slate-700"
+                            }`}
                           >
-                            {isActionLoading ? "Updating..." : "Approve"}
-                          </button>
-
-                          <button
-                            onClick={() => handleReject(booking.id)}
-                            disabled={isActionLoading}
-                            className="rounded bg-red-500 px-3 py-1 text-white disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isActionLoading ? "Updating..." : "Reject"}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                            {status || booking.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-sm text-slate-600">
+                          {booking.qrCode ? (
+                            <span className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-600">
+                              <QrCode size={14} />
+                              {booking.qrCode.slice(0, 14)}...
+                            </span>
+                          ) : (
+                            "Not generated"
+                          )}
+                        </td>
+                        <td className="px-6 py-5">
+                          {status === "PENDING" ? (
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleApprove(booking.id)}
+                                disabled={isActionLoading}
+                                className="inline-flex items-center gap-2 rounded-lg bg-green-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <CheckCircle2 size={15} />
+                                {isActionLoading ? "Updating..." : "Approve"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleReject(booking.id)}
+                                disabled={isActionLoading}
+                                className="inline-flex items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <XCircle size={15} />
+                                {isActionLoading ? "Updating..." : "Reject"}
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-slate-400">No actions</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

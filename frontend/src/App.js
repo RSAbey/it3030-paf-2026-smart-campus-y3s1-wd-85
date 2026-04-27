@@ -1,5 +1,8 @@
+import { Toaster } from "react-hot-toast";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import QRScanner from "./components/QRScanner";
+import { AuthProvider } from "./context/AuthContext";
 import DashboardPage from "./pages/admin/DashboardPage";
 import AdminBookingPage from "./pages/admin/AdminBookingPage";
 import LoginPage from "./pages/LoginPage";
@@ -10,20 +13,86 @@ import StudentDashboard from "./pages/student/DashboardPage";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/student/dashboard" element={<StudentDashboard />} />
-        <Route path="/student/bookings/new" element={<BookingPage />} />
-        <Route path="/student/bookings" element={<BookingPage />} />
-        <Route path="/admin/dashboard" element={<DashboardPage />} />
-        <Route path="/admin/bookings" element={<AdminBookingPage />} />
-        <Route path="/admin/scan" element={<QRScanner />} />
-        <Route path="/admin/resources" element={<ResourcePage />} />
-        <Route path="/resources" element={<ResourcePage />} />
-        <Route path="/tickets" element={<TicketPage />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Toaster position="top-right" />
+        <Routes>
+          <Route path="/" element={<LoginPage />} />
+          <Route
+            path="/student/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["STUDENT"]}>
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/bookings/new"
+            element={
+              <ProtectedRoute allowedRoles={["STUDENT"]}>
+                <BookingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/bookings"
+            element={
+              <ProtectedRoute allowedRoles={["STUDENT"]}>
+                <BookingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/bookings"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <AdminBookingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/scan"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <QRScanner />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/resources"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <ResourcePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resources"
+            element={
+              <ProtectedRoute allowedRoles={["STUDENT", "ADMIN"]}>
+                <ResourcePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets"
+            element={
+              <ProtectedRoute allowedRoles={["STUDENT", "ADMIN"]}>
+                <TicketPage />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Box,
@@ -6,10 +6,14 @@ import {
   Ticket,
   Bell,
   Settings,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 function Sidebar({ role = "admin" }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const isActiveRoute = (itemPath) => {
     if (itemPath === "/student/bookings") {
@@ -38,6 +42,11 @@ function Sidebar({ role = "admin" }) {
   ];
 
   const menu = role === "student" ? studentMenu : adminMenu;
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   return (
     <div className="flex h-screen w-64 flex-col justify-between border-r bg-white">
@@ -69,7 +78,14 @@ function Sidebar({ role = "admin" }) {
         </ul>
       </div>
 
-      <div className="cursor-pointer p-4 text-sm text-red-500">Logout</div>
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="flex items-center gap-2 p-4 text-sm text-red-500"
+      >
+        <LogOut size={16} />
+        Logout
+      </button>
     </div>
   );
 }

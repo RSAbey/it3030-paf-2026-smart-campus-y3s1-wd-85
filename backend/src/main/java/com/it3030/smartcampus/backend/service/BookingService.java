@@ -9,11 +9,9 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
+import com.it3030.smartcampus.backend.dto.BookingRequestDTO;
 import com.it3030.smartcampus.backend.dto.BookingResponseDTO;
 import com.it3030.smartcampus.backend.entity.Booking;
 import com.it3030.smartcampus.backend.entity.Resource;
@@ -21,6 +19,7 @@ import com.it3030.smartcampus.backend.entity.User;
 import com.it3030.smartcampus.backend.repository.BookingRepository;
 import com.it3030.smartcampus.backend.repository.ResourceRepository;
 import com.it3030.smartcampus.backend.repository.UserRepository;
+import com.it3030.smartcampus.backend.security.CampusUserPrincipal;
 
 @Service
 public class BookingService {
@@ -30,70 +29,78 @@ public class BookingService {
     private static final String STATUS_REJECTED = "REJECTED";
     private static final String STATUS_CANCELLED = "CANCELLED";
     private static final String STATUS_USED = "USED";
+    private static final String ROLE_ADMIN = "ADMIN";
     private static final String NOT_FOUND_MESSAGE = "Booking not found";
     private static final String PENDING_ONLY_MESSAGE = "Only pending bookings can be modified";
 
-    @Autowired
-    private BookingRepository bookingRepo;
+    private final BookingRepository bookingRepo;
+    private final ResourceRepository resourceRepo;
+    private final UserRepository userRepo;
 
-    @Autowired
-    private ResourceRepository resourceRepo;
+    public BookingService(
+        BookingRepository bookingRepo,
+        ResourceRepository resourceRepo,
+        UserRepository userRepo
+    ) {
+        this.bookingRepo = bookingRepo;
+        this.resourceRepo = resourceRepo;
+        this.userRepo = userRepo;
+    }
 
-    @Autowired
-    private UserRepository userRepo;
-
-    public Booking createBooking(Booking booking) {
+    public BookingResponseDTO createBooking(BookingRequestDTO request, CampusUserPrincipal principal) {
         List<Booking> conflicts = bookingRepo.findConflicts(
-            booking.getResourceId(),
-            booking.getDate(),
-            booking.getStartTime(),
-            booking.getEndTime()
+            request.getResourceId(),
+            request.getDate(),
+            request.getStartTime(),
+            request.getEndTime()
         );
 
         if (!conflicts.isEmpty()) {
             throw new RuntimeException("Time slot already booked!");
         }
 
-        // Always force newly created bookings into the admin approval flow.
+        Booking booking = new Booking();
+        booking.setUserId(principal.getId());
+        booking.setResourceId(request.getResourceId());
+        booking.setDate(request.getDate());
+        booking.setStartTime(request.getStartTime());
+        booking.setEndTime(request.getEndTime());
+        booking.setReason(request.getReason());
         booking.setStatus(STATUS_PENDING);
-        booking.setReason(null);
         booking.setQrCode(null);
         booking.setIsUsed(false);
-        return bookingRepo.save(booking);
+
+        return mapToDTO(bookingRepo.save(booking));
     }
 
-    public List<Booking> getAllBookings() {
-        return bookingRepo.findAll();
-    }
-
-    public List<Booking> getBookingsByUser(Long userId) {
-        return bookingRepo.findByUserId(userId);
-    }
-
-    public List<BookingResponseDTO> getBookingResponsesByUser(Long userId) {
-        return bookingRepo.findByUserId(userId)
+    public List<BookingResponseDTO> getAllBookingResponses() {
+        return bookingRepo.findAll()
             .stream()
             .map(this::mapToDTO)
             .collect(Collectors.toList());
     }
 
-    public Booking cancelBooking(Long id) {
+    public List<BookingResponseDTO> getBookingResponsesByUser(CampusUserPrincipal principal) {
+        return bookingRepo.findByUserId(principal.getId())
+            .stream()
+            .map(this::mapToDTO)
+            .collect(Collectors.toList());
+    }
+
+    public BookingResponseDTO cancelBooking(Long id, CampusUserPrincipal principal) {
         logger.info("Cancel booking requested for id={}", id);
-        Booking booking = getPendingBookingOrThrow(id);
+        Booking booking = getOwnedPendingBookingOrThrow(id, principal);
 
         booking.setStatus(STATUS_CANCELLED);
-        booking.setReason(null);
         booking.setQrCode(null);
         booking.setIsUsed(false);
 
-        Booking savedBooking = bookingRepo.save(booking);
-        logger.info("Booking cancelled successfully for id={}", id);
-        return savedBooking;
+        return mapToDTO(bookingRepo.save(booking));
     }
 
-    public Booking updateBooking(Long id, Booking updatedBooking) {
+    public BookingResponseDTO updateBooking(Long id, BookingRequestDTO updatedBooking, CampusUserPrincipal principal) {
         logger.info("Update booking requested for id={}", id);
-        Booking booking = getPendingBookingOrThrow(id);
+        Booking booking = getOwnedPendingBookingOrThrow(id, principal);
         Long targetResourceId = updatedBooking.getResourceId() != null
             ? updatedBooking.getResourceId()
             : booking.getResourceId();
@@ -116,34 +123,39 @@ public class BookingService {
         booking.setDate(updatedBooking.getDate());
         booking.setStartTime(updatedBooking.getStartTime());
         booking.setEndTime(updatedBooking.getEndTime());
+        booking.setReason(updatedBooking.getReason());
 
-        return bookingRepo.save(booking);
+        return mapToDTO(bookingRepo.save(booking));
     }
 
-    public Booking approveBooking(Long id) {
+    public BookingResponseDTO approveBooking(Long id) {
         logger.info("Approve booking requested for id={}", id);
         Booking booking = getBookingOrThrow(id);
 
         if (!STATUS_PENDING.equals(normalizeStatus(booking.getStatus()))) {
-            logger.warn("Booking id={} cannot be approved because status is {}", id, booking.getStatus());
             throw new RuntimeException("Only pending bookings can be approved");
         }
 
-        String qr = UUID.randomUUID().toString();
+        String qr = String.format(
+            "BOOKING:%d:USER:%d:%s",
+            booking.getId(),
+            booking.getUserId(),
+            UUID.randomUUID()
+        );
+
         booking.setStatus(STATUS_APPROVED);
-        booking.setReason(null);
+        booking.setReason(booking.getReason());
         booking.setQrCode(qr);
         booking.setIsUsed(false);
 
-        return bookingRepo.save(booking);
+        return mapToDTO(bookingRepo.save(booking));
     }
 
-    public Booking rejectBooking(Long id, String reason) {
+    public BookingResponseDTO rejectBooking(Long id, String reason) {
         logger.info("Reject booking requested for id={}", id);
         Booking booking = getBookingOrThrow(id);
 
         if (!STATUS_PENDING.equals(normalizeStatus(booking.getStatus()))) {
-            logger.warn("Booking id={} cannot be rejected because status is {}", id, booking.getStatus());
             throw new RuntimeException("Only pending bookings can be rejected");
         }
 
@@ -152,18 +164,16 @@ public class BookingService {
         booking.setQrCode(null);
         booking.setIsUsed(false);
 
-        return bookingRepo.save(booking);
+        return mapToDTO(bookingRepo.save(booking));
     }
 
-    public Booking getBookingByQrCode(String qrCode) {
+    public BookingResponseDTO getBookingByQrCode(String qrCode) {
         logger.info("QR booking lookup requested for qrCode={}", qrCode);
-
-        return bookingRepo.findByQrCode(qrCode)
-            .orElseThrow(() -> new RuntimeException("Invalid QR Code"));
+        return mapToDTO(findBookingByQrCode(qrCode));
     }
 
-    public Booking verifyBookingByQrCode(String qrCode) {
-        Booking booking = getBookingByQrCode(qrCode);
+    public BookingResponseDTO scanBooking(String qrCode) {
+        Booking booking = findBookingByQrCode(qrCode);
 
         if (!STATUS_APPROVED.equals(normalizeStatus(booking.getStatus()))) {
             throw new RuntimeException("Booking not approved");
@@ -171,37 +181,14 @@ public class BookingService {
 
         if (Boolean.TRUE.equals(booking.getIsUsed())) {
             throw new RuntimeException("QR already used");
-        }
-
-        return booking;
-    }
-
-    public Booking validateQrCode(String qrCode) {
-        Booking booking = getBookingByQrCode(qrCode);
-
-        if (Boolean.TRUE.equals(booking.getIsUsed())) {
-            throw new RuntimeException("QR already used");
-        }
-
-        if (!STATUS_APPROVED.equals(normalizeStatus(booking.getStatus()))) {
-            throw new RuntimeException("Booking not approved");
         }
 
         booking.setIsUsed(true);
         booking.setStatus(STATUS_USED);
-        return bookingRepo.save(booking);
+        return mapToDTO(bookingRepo.save(booking));
     }
 
-    public void deleteBooking(Long id) {
-        if (!bookingRepo.existsById(id)) {
-            throw new RuntimeException(NOT_FOUND_MESSAGE);
-        }
-
-        bookingRepo.deleteById(id);
-    }
-
-    @PostMapping("/check")
-    public Map<String, Boolean> checkConflict(@RequestBody Booking booking) {
+    public Map<String, Boolean> checkConflict(BookingRequestDTO booking) {
         List<Booking> conflicts = bookingRepo.findConflicts(
             booking.getResourceId(),
             booking.getDate(),
@@ -213,15 +200,6 @@ public class BookingService {
         response.put("conflict", !conflicts.isEmpty());
 
         return response;
-    }
-
-    public List<Booking> checkConflicts(Booking booking) {
-        return bookingRepo.findConflicts(
-            booking.getResourceId(),
-            booking.getDate(),
-            booking.getStartTime(),
-            booking.getEndTime()
-        );
     }
 
     public BookingResponseDTO mapToDTO(Booking booking) {
@@ -254,20 +232,24 @@ public class BookingService {
         return dto;
     }
 
-    private Booking getBookingOrThrow(Long id) {
-        return bookingRepo.findById(id)
-            .orElseThrow(() -> {
-                logger.warn("Booking not found for id={}", id);
-                return new RuntimeException(NOT_FOUND_MESSAGE);
-            });
+    private Booking findBookingByQrCode(String qrCode) {
+        return bookingRepo.findByQrCode(qrCode)
+            .orElseThrow(() -> new RuntimeException("Invalid QR Code"));
     }
 
-    private Booking getPendingBookingOrThrow(Long id) {
+    private Booking getBookingOrThrow(Long id) {
+        return bookingRepo.findById(id)
+            .orElseThrow(() -> new RuntimeException(NOT_FOUND_MESSAGE));
+    }
+
+    private Booking getOwnedPendingBookingOrThrow(Long id, CampusUserPrincipal principal) {
         Booking booking = getBookingOrThrow(id);
-        logger.info("Current booking status for id={} is {}", id, booking.getStatus());
+
+        if (!ROLE_ADMIN.equals(principal.getRole()) && !principal.getId().equals(booking.getUserId())) {
+            throw new RuntimeException("You are not allowed to modify this booking");
+        }
 
         if (!STATUS_PENDING.equals(normalizeStatus(booking.getStatus()))) {
-            logger.warn("Booking id={} cannot be modified because status is {}", id, booking.getStatus());
             throw new RuntimeException(PENDING_ONLY_MESSAGE);
         }
 

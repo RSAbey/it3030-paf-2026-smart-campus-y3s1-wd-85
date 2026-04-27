@@ -1,6 +1,17 @@
 import { Bell } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 function Navbar() {
+  const { user } = useAuth();
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "SC";
+
   return (
     <div className="flex justify-between items-center bg-white px-6 py-3 border-b">
       
@@ -24,12 +35,12 @@ function Navbar() {
         {/* User */}
         <div className="flex items-center gap-2">
           <div className="text-right">
-            <p className="text-sm font-medium">Admin User</p>
-            <p className="text-xs text-gray-500">admin@campus.edu</p>
+            <p className="text-sm font-medium">{user?.name || "Campus User"}</p>
+            <p className="text-xs text-gray-500">{user?.email || "campus@smart.edu"}</p>
           </div>
 
           <div className="w-9 h-9 bg-blue-500 text-white flex items-center justify-center rounded-full">
-            AU
+            {initials}
           </div>
         </div>
 

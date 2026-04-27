@@ -1,14 +1,12 @@
 package com.it3030.smartcampus.backend.controller;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,15 +15,19 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.it3030.smartcampus.backend.dto.BookingRequestDTO;
 import com.it3030.smartcampus.backend.dto.BookingResponseDTO;
-import com.it3030.smartcampus.backend.entity.Booking;
+import com.it3030.smartcampus.backend.dto.BookingScanRequestDTO;
+import com.it3030.smartcampus.backend.dto.RejectBookingRequestDTO;
+import com.it3030.smartcampus.backend.security.CampusUserPrincipal;
 import com.it3030.smartcampus.backend.service.BookingService;
 
+import jakarta.validation.Valid;
+
+@Validated
 @RestController
 @RequestMapping("/api/booking")
-@CrossOrigin
 public class BookingController {
-    private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
     private final BookingService service;
 
     public BookingController(BookingService service) {
@@ -33,102 +35,78 @@ public class BookingController {
     }
 
     @GetMapping
-    public List<Booking> getAllBookings() {
-        return service.getAllBookings();
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<BookingResponseDTO> getAllBookings() {
+        return service.getAllBookingResponses();
     }
 
-    @GetMapping("/user/{userId}")
-    public List<Booking> getUserBookings(@PathVariable Long userId) {
-        return service.getBookingsByUser(userId);
-    }
-
-    @GetMapping("/my-bookings/{userId}")
-    public List<BookingResponseDTO> getMyBookings(@PathVariable Long userId) {
-        return service.getBookingResponsesByUser(userId);
-    }
-
-    @GetMapping("/verify/{qrCode}")
-    public ResponseEntity<?> verifyQR(@PathVariable String qrCode) {
-        try {
-            Booking booking = service.verifyBookingByQrCode(qrCode);
-            return ResponseEntity.ok(booking);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    @GetMapping("/my-bookings")
+    public List<BookingResponseDTO> getMyBookings(
+        @AuthenticationPrincipal CampusUserPrincipal principal
+    ) {
+        return service.getBookingResponsesByUser(principal);
     }
 
     @GetMapping("/qr/{qrCode}")
-    public ResponseEntity<?> getBookingByQR(@PathVariable String qrCode) {
-        try {
-            Booking booking = service.getBookingByQrCode(qrCode);
-            return ResponseEntity.ok(booking);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    @PutMapping("/qr/validate/{qrCode}")
-    public ResponseEntity<?> validateQR(@PathVariable String qrCode) {
-        try {
-            Booking booking = service.validateQrCode(qrCode);
-            return ResponseEntity.ok(booking);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingResponseDTO> getBookingByQR(@PathVariable String qrCode) {
+        return ResponseEntity.ok(service.getBookingByQrCode(qrCode));
     }
 
     @PostMapping
-    public ResponseEntity<Booking> createBooking(@RequestBody Booking booking) {
-        return ResponseEntity.ok(service.createBooking(booking));
+    @PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
+    public ResponseEntity<BookingResponseDTO> createBooking(
+        @Valid @RequestBody BookingRequestDTO booking,
+        @AuthenticationPrincipal CampusUserPrincipal principal
+    ) {
+        return ResponseEntity.ok(service.createBooking(booking, principal));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Booking> updateBooking(@PathVariable Long id, @RequestBody Booking booking) {
-        return ResponseEntity.ok(service.updateBooking(id, booking));
+    @PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
+    public ResponseEntity<BookingResponseDTO> updateBooking(
+        @PathVariable Long id,
+        @Valid @RequestBody BookingRequestDTO booking,
+        @AuthenticationPrincipal CampusUserPrincipal principal
+    ) {
+        return ResponseEntity.ok(service.updateBooking(id, booking, principal));
     }
 
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<Booking> cancelBooking(@PathVariable Long id) {
-        logger.info("Received cancel booking request for id={}", id);
-        return ResponseEntity.ok(service.cancelBooking(id));
+    @PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
+    public ResponseEntity<BookingResponseDTO> cancelBooking(
+        @PathVariable Long id,
+        @AuthenticationPrincipal CampusUserPrincipal principal
+    ) {
+        return ResponseEntity.ok(service.cancelBooking(id, principal));
     }
 
     @PutMapping("/{id}/approve")
-    public ResponseEntity<?> approveBooking(@PathVariable Long id) {
-        logger.info("Received approve booking request for id={}", id);
-        try {
-            Booking booking = service.approveBooking(id);
-            return ResponseEntity.ok(booking);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingResponseDTO> approveBooking(@PathVariable Long id) {
+        return ResponseEntity.ok(service.approveBooking(id));
     }
 
     @PutMapping("/{id}/reject")
-    public ResponseEntity<?> rejectBooking(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        logger.info("Received reject booking request for id={}", id);
-        try {
-            String reason = body.get("reason");
-            Booking booking = service.rejectBooking(id, reason);
-            return ResponseEntity.ok(booking);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingResponseDTO> rejectBooking(
+        @PathVariable Long id,
+        @Valid @RequestBody RejectBookingRequestDTO body
+    ) {
+        return ResponseEntity.ok(service.rejectBooking(id, body.getReason()));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteBooking(@PathVariable Long id) {
-        service.deleteBooking(id);
-        return ResponseEntity.ok("Deleted successfully");
+    @PostMapping("/scan")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingResponseDTO> scanBooking(
+        @Valid @RequestBody BookingScanRequestDTO request
+    ) {
+        return ResponseEntity.ok(service.scanBooking(request.getQrCode()));
     }
 
     @PostMapping("/check")
-    public Map<String, Boolean> checkConflict(@RequestBody Booking booking) {
-        List<Booking> conflicts = service.checkConflicts(booking);
-
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("conflict", !conflicts.isEmpty());
-
-        return response;
+    @PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
+    public Map<String, Boolean> checkConflict(@Valid @RequestBody BookingRequestDTO booking) {
+        return service.checkConflict(booking);
     }
 }

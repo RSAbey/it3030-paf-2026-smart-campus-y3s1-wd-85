@@ -1,40 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import StudentLayout from "../../components/layout/StudentLayout";
 import BookingCard from "../../components/bookings/BookingCard";
 import BookingModal from "../../components/bookings/BookingModal";
 import { cancelBooking, getBookings } from "../../services/bookingService";
 
-function normalizeBookingsResponse(response) {
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  if (Array.isArray(response?.content)) {
-    return response.content;
-  }
-
-  if (Array.isArray(response?.data)) {
-    return response.data;
-  }
-
-  return [];
-}
+const filters = ["ALL", "PENDING", "APPROVED", "REJECTED", "CANCELLED", "USED"];
 
 function BookingPage() {
-  const userId = 1;
   const [open, setOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState("ALL");
 
   const loadBookings = async () => {
     try {
-      const response = await getBookings(userId);
-      const data = normalizeBookingsResponse(response);
-      console.log(data);
-      setBookings(data);
+      const data = await getBookings();
+      setBookings(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Error loading bookings:", err);
+      toast.error("Failed to load bookings");
+      setBookings([]);
     } finally {
       setLoading(false);
     }
@@ -43,6 +29,16 @@ function BookingPage() {
   useEffect(() => {
     loadBookings();
   }, []);
+
+  const filteredBookings = useMemo(() => {
+    if (activeFilter === "ALL") {
+      return bookings;
+    }
+
+    return bookings.filter(
+      (booking) => booking.status?.toUpperCase() === activeFilter
+    );
+  }, [activeFilter, bookings]);
 
   const closeModal = () => {
     setOpen(false);
@@ -59,31 +55,24 @@ function BookingPage() {
     setOpen(true);
   };
 
-  const handleRefreshBookings = async () => {
-    await loadBookings();
-  };
-
   const handleCancelBooking = async (bookingId) => {
     try {
-      console.log("handleCancelBooking ID:", bookingId);
       await cancelBooking(bookingId);
-      const response = await getBookings(userId);
-      const data = normalizeBookingsResponse(response);
-      console.log(data);
-      setBookings(data);
+      toast.success("Booking cancelled");
+      await loadBookings();
     } catch (err) {
-      console.error("Error cancelling booking:", err);
+      toast.error(err.response?.data?.message || err.response?.data || "Failed to cancel booking");
     }
   };
 
   return (
     <StudentLayout>
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
             <p className="mt-2 text-sm text-gray-500">
-              Manage your resource reservations
+              Manage your resource reservations and approved entry QR passes.
             </p>
           </div>
 
@@ -96,32 +85,49 @@ function BookingPage() {
           </button>
         </div>
 
-        {loading && (
-          <p className="text-gray-500 text-sm">Loading bookings...</p>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {filters.map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              onClick={() => setActiveFilter(filter)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                activeFilter === filter
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-600 shadow-sm ring-1 ring-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
 
-        {!loading && bookings.length === 0 && (
+        {loading && <p className="text-sm text-gray-500">Loading bookings...</p>}
+
+        {!loading && filteredBookings.length === 0 && (
           <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500 shadow-sm">
-            No bookings found yet. Use the button above to create your first reservation.
+            No bookings found for the selected filter.
           </div>
         )}
 
-        <div className="space-y-4">
-          {bookings.map((booking) => (
-            <BookingCard
-              key={booking.id}
-              booking={booking}
-              onEdit={handleEditBooking}
-              onCancel={handleCancelBooking}
-            />
-          ))}
-        </div>
+        {!loading && filteredBookings.length > 0 && (
+          <div className="space-y-4">
+            {filteredBookings.map((booking) => (
+              <BookingCard
+                key={booking.id}
+                booking={booking}
+                onEdit={handleEditBooking}
+                onCancel={handleCancelBooking}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {open && (
         <BookingModal
           close={closeModal}
-          refresh={handleRefreshBookings}
+          refresh={loadBookings}
           booking={selectedBooking}
         />
       )}

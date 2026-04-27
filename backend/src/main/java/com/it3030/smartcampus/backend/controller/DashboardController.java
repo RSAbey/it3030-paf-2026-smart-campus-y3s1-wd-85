@@ -3,47 +3,46 @@ package com.it3030.smartcampus.backend.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.it3030.smartcampus.backend.dto.DashboardStats;
+import com.it3030.smartcampus.backend.security.CampusUserPrincipal;
 import com.it3030.smartcampus.backend.service.DashboardService;
 
 @RestController
 @RequestMapping("/api/dashboard")
-@CrossOrigin
-
 public class DashboardController {
-
-    @Auutowired
-
     private final DashboardService service;
-
-    //Student Dashboard API
-    @GetMapping("/student/{userId}")
-    public Map<String, Object> getStudentStats(@PathVariable Long userId) {
-        return service.getStudentStats(userId);
-    }
 
     public DashboardController(DashboardService service) {
         this.service = service;
     }
 
+    @GetMapping("/student")
+    @PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
+    public Map<String, Object> getStudentStats(@AuthenticationPrincipal CampusUserPrincipal principal) {
+        return service.getStudentStats(principal.getId());
+    }
+
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('ADMIN')")
     public DashboardStats getStats() {
         return service.getStats();
     }
 
     @GetMapping("/weekly-bookings")
-        public List<Map<String, Object>> weeklyBookings() {
-            return service.getWeeklyBookings();
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<Map<String, Object>> weeklyBookings() {
+        return service.getWeeklyBookings();
     }
 
     @GetMapping("/resource-distribution")
-        public List<Map<String, Object>> resourceDistribution() {
-            return service.getResourceDistribution();
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<Map<String, Object>> resourceDistribution() {
+        return service.getResourceDistribution();
     }
 }

@@ -22,7 +22,7 @@ function BookingForm({ close, refresh = async () => {}, booking }) {
     date: booking?.date || "",
     startTime: booking?.startTime || "",
     endTime: booking?.endTime || "",
-    purpose: booking?.purpose || "",
+    reason: booking?.reason || "",
   });
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(null);
@@ -125,11 +125,11 @@ function BookingForm({ close, refresh = async () => {}, booking }) {
 
     try {
       const payload = {
-        userId: booking?.userId || 1,
         resourceId: Number(formData.resourceId),
         date: formData.date,
         startTime: formData.startTime,
         endTime: formData.endTime,
+        reason: formData.reason,
       };
 
       if (booking?.id) {
@@ -198,15 +198,15 @@ function BookingForm({ close, refresh = async () => {}, booking }) {
         </div>
 
         <div>
-          <label htmlFor="purpose" className="text-sm font-medium text-gray-700">
-            Purpose
+          <label htmlFor="reason" className="text-sm font-medium text-gray-700">
+            Reason
           </label>
           <input
-            id="purpose"
-            name="purpose"
+            id="reason"
+            name="reason"
             type="text"
             placeholder="Study session"
-            value={formData.purpose}
+            value={formData.reason}
             onChange={handleChange}
             className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />

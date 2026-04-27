@@ -10,8 +10,8 @@ export const createBooking = async (data) => {
   return res.data;
 };
 
-export const getBookings = async (userId) => {
-  const res = await axios.get(`/booking/my-bookings/${userId}`);
+export const getBookings = async () => {
+  const res = await axios.get("/booking/my-bookings");
   return res.data;
 };
 
@@ -56,8 +56,8 @@ export const getBookingByQrCode = async (qrCode) => {
   return res.data;
 };
 
-export const validateQrCode = async (qrCode) => {
-  const res = await axios.put(`/booking/qr/validate/${qrCode}`);
+export const scanBookingQr = async (qrCode) => {
+  const res = await axios.post("/booking/scan", { qrCode });
   return res.data;
 };
 

@@ -3,12 +3,11 @@ package com.it3030.smartcampus.backend.service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.it3030.smartcampus.backend.dto.DashboardStats;
-import com.it3030.smartcampus.backend.entity.Booking;
-import com.it3030.smartcampus.backend.entity.Ticket;
 import com.it3030.smartcampus.backend.repository.BookingRepository;
 import com.it3030.smartcampus.backend.repository.ResourceRepository;
 import com.it3030.smartcampus.backend.repository.TicketRepository;
@@ -36,7 +35,7 @@ public class DashboardService {
     }
 
     public DashboardStats getStats() {
-        long totalBookings = 0; //Temporary, later filter by date
+        long totalBookings = bookingRepo.count();
         long activeTickets = ticketRepo.count(); // later filter OPEN
         long totalResources = resourceRepo.count();
         long activeUsers = userRepo.count();
@@ -58,18 +57,41 @@ public class DashboardService {
     }
 
     public Map<String, Object> getStudentStats(Long userId) {
-
         Map<String, Object> data = new HashMap<>();
 
         long myBookings = bookingRepo.countByUserId(userId);
         long myTickets = ticketRepo.countByUserId(userId);
         long pendingBookings = bookingRepo.countByUserIdAndStatus(userId, "PENDING");
 
-        List<Booking> recentBookings =
-            bookingRepo.findTop5ByUserIdOrderByIdDesc(userId);
+        List<Map<String, Object>> recentBookings = bookingRepo.findTop5ByUserIdOrderByIdDesc(userId)
+            .stream()
+            .map(booking -> {
+                Map<String, Object> bookingData = new HashMap<>();
+                bookingData.put("id", booking.getId());
+                bookingData.put("date", booking.getDate());
+                bookingData.put("startTime", booking.getStartTime());
+                bookingData.put("endTime", booking.getEndTime());
+                bookingData.put("status", booking.getStatus());
+                bookingData.put(
+                    "resourceName",
+                    resourceRepo.findById(booking.getResourceId())
+                        .map(resource -> resource.getName())
+                        .orElse("Resource #" + booking.getResourceId())
+                );
+                return bookingData;
+            })
+            .collect(Collectors.toList());
 
-        List<Ticket> recentTickets =
-            ticketRepo.findTop5ByUserIdOrderByIdDesc(userId);
+        List<Map<String, Object>> recentTickets = ticketRepo.findTop5ByUserIdOrderByIdDesc(userId)
+            .stream()
+            .map(ticket -> {
+                Map<String, Object> ticketData = new HashMap<>();
+                ticketData.put("id", ticket.getId());
+                ticketData.put("title", "Ticket #" + ticket.getId());
+                ticketData.put("status", "OPEN");
+                return ticketData;
+            })
+            .collect(Collectors.toList());
 
         data.put("myBookings", myBookings);
         data.put("myTickets", myTickets);
@@ -78,6 +100,6 @@ public class DashboardService {
         data.put("recentTickets", recentTickets);
 
         return data;
-}
+    }
 
 }

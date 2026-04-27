@@ -1,5 +1,5 @@
-import {use, useEffect, useState} from "react"; // eslint-disable-next-line no-unused-vars
-import api from "../services/api"; // eslint-disable-next-line no-unused-vars
+import { useEffect, useState } from "react";
+import api from "../services/api";
 
 // eslint-disable-next-line no-unused-vars
 function ResourcePage() {
