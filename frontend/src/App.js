@@ -1,5 +1,4 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import QRScanner from "./components/QRScanner";
 import DashboardPage from "./pages/admin/DashboardPage";
 import AdminBookingPage from "./pages/admin/AdminBookingPage";
 import LoginPage from "./pages/LoginPage";
@@ -18,7 +17,6 @@ function App() {
         <Route path="/student/bookings" element={<BookingPage />} />
         <Route path="/admin/dashboard" element={<DashboardPage />} />
         <Route path="/admin/bookings" element={<AdminBookingPage />} />
-        <Route path="/admin/scan" element={<QRScanner />} />
         <Route path="/admin/resources" element={<ResourcePage />} />
         <Route path="/resources" element={<ResourcePage />} />
         <Route path="/tickets" element={<TicketPage />} />
